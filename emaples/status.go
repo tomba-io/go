@@ -10,7 +10,9 @@ func main() {
 	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
 
 	result, err := tomba.Status("gmail.com")
-	if err == nil {
-		fmt.Println(result)
+	if err != nil {
+		fmt.Println("Error : ", err)
+		return
 	}
+	fmt.Print(result)
 }

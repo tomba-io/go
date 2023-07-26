@@ -15,7 +15,7 @@ allowing you to:
 ## Features
 
 - Collect publicly available emails online (Html, execute JavaScript,files,).
-- No duplicate email    No duplicate domain .
+- No duplicate email No duplicate domain .
 - No webmail like Gmail,Outlook and the others.
 - We detect 15 type of hashes and remove them.
 - No disposable and temporary email address.
@@ -24,7 +24,7 @@ allowing you to:
 
 You'll need an Tomba API access token, which you can get by signing up for a free account at [https://app.tomba.io/auth/register](https://app.tomba.io/auth/register)
 
-The free plan is limited to 50 search request and 50 verification a month,  To enable all the data fields and additional request volumes see [https://tomba.io/pricing](https://tomba.io/pricing).
+The free plan is limited to 50 search request and 50 verification a month, To enable all the data fields and additional request volumes see [https://tomba.io/pricing](https://tomba.io/pricing).
 
 ## Installation
 
@@ -50,7 +50,7 @@ import (
 func main() {
 	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
 
-	result, err := tomba.DomainSearch("tomba.io")
+	result, err := tomba.DomainSearch("tomba.io", "10", "0")
 	if err == nil {
 		fmt.Println(result)
 	}

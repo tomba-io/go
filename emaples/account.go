@@ -12,7 +12,7 @@ func main() {
 	result, err := tomba.Account()
 	if err != nil {
 		fmt.Println("Error : ", err)
-	} else {
-		fmt.Println(result.Data.Email)
+		return
 	}
+	fmt.Print(result)
 }
