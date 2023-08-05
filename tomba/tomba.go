@@ -11,13 +11,13 @@ import (
 
 // TombaCall to Tomba Api
 // get data
-func (conf *Tomba) TombaCall(path string, params *map[string]string) (string, error) {
+func (conf *Tomba) TombaCall(path string, params Params) (string, error) {
 
 	apiUrl := DEFAULT_BASE_URL + path
 
-	if params != nil {
+	if len(params) != 0 {
 		queryParams := url.Values{}
-		for key, value := range *params {
+		for key, value := range params {
 			queryParams.Add(key, value)
 		}
 		apiUrl += "?" + queryParams.Encode()
@@ -62,15 +62,10 @@ func (conf *Tomba) Account() (models.Account, error) {
 }
 
 // DomainSearch Search emails are based on the website You give one domain name and it returns all the email addresses found on the internet.
-func (conf *Tomba) DomainSearch(domain string, limit string, page string) (models.Search, error) {
+func (conf *Tomba) DomainSearch(params Params) (models.Search, error) {
 
 	search := models.Search{}
-	params := map[string]string{
-		"domain": domain,
-		"limit":  limit,
-		"page":   page,
-	}
-	str, err := conf.TombaCall(SEARCH_PATH, &params)
+	str, err := conf.TombaCall(SEARCH_PATH, params)
 	if err != nil {
 		return search, err
 	}
@@ -84,10 +79,7 @@ func (conf *Tomba) DomainSearch(domain string, limit string, page string) (model
 // Count Returns total email addresses we have for one domain.
 func (conf *Tomba) Count(domain string) (models.Count, error) {
 	count := models.Count{}
-	params := map[string]string{
-		"domain": domain,
-	}
-	str, err := conf.TombaCall(COUNT_PATH, &params)
+	str, err := conf.TombaCall(COUNT_PATH, Params{"domain": domain})
 	if err != nil {
 		return count, err
 	}
@@ -101,10 +93,7 @@ func (conf *Tomba) Count(domain string) (models.Count, error) {
 // Status Returns domain status if is webmail or disposable.
 func (conf *Tomba) Status(domain string) (models.Status, error) {
 	status := models.Status{}
-	params := map[string]string{
-		"domain": domain,
-	}
-	str, err := conf.TombaCall(STATUS_PATH, &params)
+	str, err := conf.TombaCall(STATUS_PATH, Params{"domain": domain})
 	if err != nil {
 		return status, err
 	}
@@ -116,14 +105,9 @@ func (conf *Tomba) Status(domain string) (models.Status, error) {
 }
 
 // EmailFinder Generates or retrieves the most likely email address from a domain name, a first name and a last name.
-func (conf *Tomba) EmailFinder(domain string, fname string, lname string) (models.Finder, error) {
+func (conf *Tomba) EmailFinder(params Params) (models.Finder, error) {
 	finder := models.Finder{}
-	params := map[string]string{
-		"domain":     domain,
-		"first_name": fname,
-		"last_name":  lname,
-	}
-	str, err := conf.TombaCall(FINDER_PATH, &params)
+	str, err := conf.TombaCall(FINDER_PATH, params)
 	if err != nil {
 		return finder, err
 	}
@@ -137,10 +121,7 @@ func (conf *Tomba) EmailFinder(domain string, fname string, lname string) (model
 //  Enrichment The API lets you look up person and company data based on an email, For example, you could retrieve a person’s name, location and social handles from an email
 func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
 	finder := models.Finder{}
-	params := map[string]string{
-		"email": email,
-	}
-	str, err := conf.TombaCall(ENRICHMENT_PATH, &params)
+	str, err := conf.TombaCall(ENRICHMENT_PATH, Params{"email": email})
 	if err != nil {
 		return finder, err
 	}
@@ -154,10 +135,7 @@ func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
 //  AuthorFinder This API generates or retrieves the most likely email address from a blog post url.
 func (conf *Tomba) AuthorFinder(url string) (models.Finder, error) {
 	finder := models.Finder{}
-	params := map[string]string{
-		"url": url,
-	}
-	str, err := conf.TombaCall(AUTHOR_PATH, &params)
+	str, err := conf.TombaCall(AUTHOR_PATH, Params{"url": url})
 	if err != nil {
 		return finder, err
 	}
@@ -171,10 +149,7 @@ func (conf *Tomba) AuthorFinder(url string) (models.Finder, error) {
 // LinkedinFinder  This API point generates or retrieves the most likely email address from a Linkedin URL.
 func (conf *Tomba) LinkedinFinder(url string) (models.Finder, error) {
 	finder := models.Finder{}
-	params := map[string]string{
-		"url": url,
-	}
-	str, err := conf.TombaCall(LINKEDIN_PATH, &params)
+	str, err := conf.TombaCall(LINKEDIN_PATH, Params{"url": url})
 	if err != nil {
 		return finder, err
 	}
