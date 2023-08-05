@@ -34,7 +34,7 @@ type FinderData struct {
 	Company      string             `json:"company"`
 	Score        int64              `json:"score"`
 	Verification FinderVerification `json:"verification"`
-	Sources      []interface{}      `json:"sources"`
+	Sources      []SourceElement    `json:"sources"`
 }
 
 type FinderVerification struct {

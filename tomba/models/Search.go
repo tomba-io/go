@@ -41,15 +41,7 @@ type SearchEmail struct {
 	Score        int64              `json:"score"`
 	Verification SearchVerification `json:"verification"`
 	LastUpdated  string             `json:"last_updated"`
-	Sources      []SearchSource     `json:"sources"`
-}
-
-type SearchSource struct {
-	URI         string `json:"uri"`
-	WebsiteURL  string `json:"website_url"`
-	ExtractedOn string `json:"extracted_on"`
-	LastSeenOn  string `json:"last_seen_on"`
-	StillOnPage bool   `json:"still_on_page"`
+	Sources      []SourceElement    `json:"sources"`
 }
 
 type SearchVerification struct {
