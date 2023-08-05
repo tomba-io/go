@@ -7,9 +7,8 @@ import (
 )
 
 func main() {
-	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
-
-	result, err := tomba.EmailFinder("stripe.com", "fname", "lname")
+	client := tomba.New("ta_xxxxx", "ts_xxxxx")
+	result, err := client.EmailFinder(tomba.Params{"domain": "asana.com", "full_name": "moskoz dustin"})
 	if err != nil {
 		fmt.Println("Error : ", err)
 		return

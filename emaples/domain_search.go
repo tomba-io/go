@@ -7,9 +7,10 @@ import (
 )
 
 func main() {
-	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
-
-	result, err := tomba.DomainSearch("tomba.io", "10", "0")
+	client := tomba.New("ta_xxxxx", "ts_xxxxx")
+	result, err := client.DomainSearch(tomba.Params{
+		"domain": "tomba.io",
+	})
 	if err != nil {
 		fmt.Println("Error : ", err)
 		return

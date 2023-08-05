@@ -48,9 +48,11 @@ import (
 )
 
 func main() {
-	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
+	client := tomba.New("ta_xxxxx", "ts_xxxxx")
 
-	result, err := tomba.DomainSearch("tomba.io", "10", "0")
+	result, err := client.DomainSearch(tomba.Params{
+		"domain": "tomba.io",
+	})
 	if err == nil {
 		fmt.Println(result)
 	}
@@ -150,9 +152,9 @@ import (
 )
 
 func main() {
-	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
+	client := tomba.New("ta_xxxxx", "ts_xxxxx")
 
-	result, err := tomba.EmailFinder("stripe.com", "fname", "lname")
+	result, err := client.EmailFinder(tomba.Params{"domain": "asana.com", "full_name": "moskoz dustin"})
 	if err == nil {
 		fmt.Println(result)
 	}
