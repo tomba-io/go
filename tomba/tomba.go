@@ -118,7 +118,7 @@ func (conf *Tomba) EmailFinder(params Params) (models.Finder, error) {
 	return data, nil
 }
 
-//  Enrichment The API lets you look up person and company data based on an email, For example, you could retrieve a person’s name, location and social handles from an email
+// Enrichment The API lets you look up person and company data based on an email, For example, you could retrieve a person’s name, location and social handles from an email
 func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
 	finder := models.Finder{}
 	str, err := conf.TombaCall(ENRICHMENT_PATH, Params{"email": email})
@@ -132,7 +132,7 @@ func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
 	return data, nil
 }
 
-//  AuthorFinder This API generates or retrieves the most likely email address from a blog post url.
+// AuthorFinder This API generates or retrieves the most likely email address from a blog post url.
 func (conf *Tomba) AuthorFinder(url string) (models.Finder, error) {
 	finder := models.Finder{}
 	str, err := conf.TombaCall(AUTHOR_PATH, Params{"url": url})
@@ -170,6 +170,20 @@ func (conf *Tomba) EmailVerifier(email string) (models.Verifier, error) {
 	data, err := models.UnmarshalVerifier([]byte(str))
 	if err != nil {
 		return verifier, err
+	}
+	return data, nil
+}
+
+// Status Returns domain status if is webmail or disposable.
+func (conf *Tomba) Sources(email string) (models.Source, error) {
+	source := models.Source{}
+	str, err := conf.TombaCall(SOURCES_PATH, Params{"email": email})
+	if err != nil {
+		return source, err
+	}
+	data, err := models.UnmarshalSource([]byte(str))
+	if err != nil {
+		return source, err
 	}
 	return data, nil
 }
