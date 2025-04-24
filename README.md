@@ -3,22 +3,20 @@
 This is the official Go client library for the [Tomba.io](https://tomba.io) Email Finder API,
 allowing you to:
 
-- [Domain Search](https://tomba.io/domain-search) (Search emails are based on the website You give one domain name and it returns all the email addresses found on the internet.)
-- [Email Finder](https://tomba.io/email-finder) (This API endpoint generates or retrieves the most likely email address from a domain name, a first name and a last name..)
-- [Author Finder](https://tomba.io/author-finder) (Instantly discover the email addresses of article authors.)
-- [Enrichment](https://tomba.io/author-finder) (The Enrichment lets you find the current job title, company, location and social profiles of the person behind the email.)
-- [Linkedin Finder](https://tomba.io/author-finder) (The Linkedin lets you find the current job title, company, location and social profiles of the person behind the linkedin URL.)
-- [Email Verifier](https://tomba.io/email-verifier) (checks the deliverability of a given email address, verifies if it has been found in our database, and returns their sources.)
-- [Email Sources](https://developer.tomba.io/#email-sources) (Find email address source somewhere on the web .)
-- [Company Domain autocomplete](https://developer.tomba.io/#autocomplete) (Company Autocomplete is an API that lets you auto-complete company names and retrieve logo and domain information.)
+-   [Domain Search](https://tomba.io/domain-search) (Search emails are based on the website You give one domain name and it returns all the email addresses found on the internet.)
+-   [Email Finder](https://tomba.io/email-finder) (This API endpoint generates or retrieves the most likely email address from a domain name, a first name and a last name..)
+-   [Author Finder](https://tomba.io/author-finder) (Instantly discover the email addresses of article authors.)
+-   [Enrichment](https://tomba.io/author-finder) (The Enrichment lets you find the current job title, company, location and social profiles of the person behind the email.)
+-   [Linkedin Finder](https://tomba.io/author-finder) (The Linkedin lets you find the current job title, company, location and social profiles of the person behind the linkedin URL.)
+-   [Email Verifier](https://tomba.io/email-verifier) (checks the deliverability of a given email address, verifies if it has been found in our database, and returns their sources.)
 
 ## Features
 
-- Collect publicly available emails online (Html, execute JavaScript,files,).
-- No duplicate email No duplicate domain .
-- No webmail like Gmail,Outlook and the others.
-- We detect 15 type of hashes and remove them.
-- No disposable and temporary email address.
+-   Collect publicly available emails online (Html, execute JavaScript,files,).
+-   No duplicate email No duplicate domain .
+-   No webmail like Gmail,Outlook and the others.
+-   We detect 15 type of hashes and remove them.
+-   No disposable and temporary email address.
 
 ## Getting Started
 
@@ -267,13 +265,13 @@ Sample codes under [**examples/**](/examples/) folder.
 
 ## Documentation
 
-See the [official documentation](https://developer.tomba.io/).
+See the [official documentation](https://docs.tomba.io/introduction).
 
 ### Other Libraries
 
 There are official Tomba Email Finder client libraries available for many languages including PHP, Python, Go, Java, Ruby, and many popular frameworks such as Django, Rails and Laravel. There are also many third party libraries and integrations available for our API.
 
-[https://developer.tomba.io/#introduction-libraries](https://developer.tomba.io/#introduction-libraries)
+[https://docs.tomba.io/libraries](https://docs.tomba.io/libraries)
 
 ### About Tomba
 
