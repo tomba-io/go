@@ -36,4 +36,6 @@ const (
 	SIMILAR_PATH = "/similar"
 	// technology path
 	TECHNOLOGY_PATH = "/technology"
+	// Bulk path
+	BULK_PATH = "/bulk/%s"
 )
