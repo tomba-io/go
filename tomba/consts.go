@@ -28,4 +28,12 @@ const (
 	STATUS_PATH = "/domain-status"
 	// Autocomplete path
 	AUTOCOMPLETE_PATH = "/domains-suggestion"
+	// Format path
+	FORMAT_PATH = "/format"
+	// Employees path
+	EMPLOYEES_PATH = "/employees"
+	// Similar path
+	SIMILAR_PATH = "/similar"
+	// technology path
+	TECHNOLOGY_PATH = "/technology"
 )
