@@ -1,58 +1,143 @@
 package tomba
 
 import (
-	"errors"
-	"io/ioutil"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
-	"net/url"
+	"os"
+	"strconv"
 
 	"github.com/tomba-io/go/tomba/models"
 )
 
 // TombaCall to Tomba Api
 // get data
-func (conf *Tomba) TombaCall(path string, params Params, method *string) (string, error) {
+// TombaCall makes API calls with support for file uploads
+func (conf *Tomba) TombaCall(path string, params Params, method *string, fileUpload *models.BulkFileUpload) ([]byte, error) {
+	var req *http.Request
+	var err error
 	apiUrl := DEFAULT_BASE_URL + path
-
-	if len(params) != 0 {
-		queryParams := url.Values{}
-		for key, value := range params {
-			queryParams.Add(key, value)
-		}
-		apiUrl += "?" + queryParams.Encode()
-	}
 	methodStr := "GET"
 	if method != nil {
 		methodStr = *method
 	}
-	req, _ := http.NewRequest(methodStr, apiUrl, nil)
 
-	req.Header.Add("X-Tomba-Key", conf.ApiKey)
-	req.Header.Add("X-Tomba-Secret", conf.ApiSecret)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "Tomba go-client")
+	// Handle file upload requests
+	if fileUpload != nil && fileUpload.FilePath != "" {
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
 
-	res, err := http.DefaultClient.Do(req)
+		// Add form fields from params
+		for key, value := range params {
+			switch v := any(value).(type) {
+			case string:
+				writer.WriteField(key, v)
+			case int:
+				writer.WriteField(key, strconv.Itoa(v))
+			case bool:
+				writer.WriteField(key, strconv.FormatBool(v))
+			case float64:
+				writer.WriteField(key, strconv.FormatFloat(v, 'f', -1, 64))
+			}
+		}
+
+		// Add file
+		file, err := os.Open(fileUpload.FilePath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		part, err := writer.CreateFormFile(fileUpload.FieldName, fileUpload.FilePath)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = io.Copy(part, file)
+		if err != nil {
+			return nil, err
+		}
+
+		err = writer.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		req, err = http.NewRequest(methodStr, apiUrl, body)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+	} else if methodStr == "GET" {
+		// Handle GET requests with query parameters
+		req, err = http.NewRequest(methodStr, apiUrl, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(params) > 0 {
+			q := req.URL.Query()
+			for key, value := range params {
+				switch v := any(value).(type) {
+				case string:
+					if v != "" {
+						q.Add(key, v)
+					}
+				case int:
+					if v > 0 {
+						q.Add(key, strconv.Itoa(v))
+					}
+				case bool:
+					q.Add(key, strconv.FormatBool(v))
+				}
+			}
+			req.URL.RawQuery = q.Encode()
+			req.Header.Set("Content-Type", "application/json")
+		}
+	} else {
+		jsonData, err := json.Marshal(params)
+		if err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequest(methodStr, apiUrl, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Set common headers
+	req.Header.Set("X-Tomba-Key", conf.ApiKey)
+	req.Header.Set("X-Tomba-Secret", conf.ApiSecret)
+	req.Header.Set("User-Agent", "tomba-go-client/1.0")
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	// fmt.Print("Request URL: ", req.URL.String(), "\n", "Method: ", req.Method, "\n", "Headers: ", req.Header, "\n")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
+	// fmt.Print("Response Status: ", resp.Status, "\n", "Response Headers: ", resp.Header, "\n")
+	if resp.Body != nil {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Reset the body for further reading
+	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("error: %s, status code: %d", resp.Status, resp.StatusCode)
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return "", errors.New("unexpected response status: " + res.Status + "\nResponse body: " + string(body))
-	}
-	return string(body), nil
+	return io.ReadAll(resp.Body)
 }
 
 // Account Returns information about the current account.
 func (conf *Tomba) Account() (models.Account, error) {
 	account := models.Account{}
-	str, err := conf.TombaCall(ACCOUNT_PATH, nil, nil)
+	str, err := conf.TombaCall(ACCOUNT_PATH, nil, nil, nil)
 	if err != nil {
 		return account, err
 	}
@@ -67,7 +152,7 @@ func (conf *Tomba) Account() (models.Account, error) {
 func (conf *Tomba) DomainSearch(params Params) (models.Search, error) {
 
 	search := models.Search{}
-	str, err := conf.TombaCall(SEARCH_PATH, params, nil)
+	str, err := conf.TombaCall(SEARCH_PATH, params, nil, nil)
 	if err != nil {
 		return search, err
 	}
@@ -81,7 +166,7 @@ func (conf *Tomba) DomainSearch(params Params) (models.Search, error) {
 // Count Returns total email addresses we have for one domain.
 func (conf *Tomba) Count(domain string) (models.Count, error) {
 	count := models.Count{}
-	str, err := conf.TombaCall(COUNT_PATH, Params{"domain": domain}, nil)
+	str, err := conf.TombaCall(COUNT_PATH, Params{"domain": domain}, nil, nil)
 	if err != nil {
 		return count, err
 	}
@@ -95,7 +180,7 @@ func (conf *Tomba) Count(domain string) (models.Count, error) {
 // Status Returns domain status if is webmail or disposable.
 func (conf *Tomba) Status(domain string) (models.Status, error) {
 	status := models.Status{}
-	str, err := conf.TombaCall(STATUS_PATH, Params{"domain": domain}, nil)
+	str, err := conf.TombaCall(STATUS_PATH, Params{"domain": domain}, nil, nil)
 	if err != nil {
 		return status, err
 	}
@@ -109,7 +194,7 @@ func (conf *Tomba) Status(domain string) (models.Status, error) {
 // EmailFinder Generates or retrieves the most likely email address from a domain name, a first name and a last name.
 func (conf *Tomba) EmailFinder(params Params) (models.Finder, error) {
 	finder := models.Finder{}
-	str, err := conf.TombaCall(FINDER_PATH, params, nil)
+	str, err := conf.TombaCall(FINDER_PATH, params, nil, nil)
 	if err != nil {
 		return finder, err
 	}
@@ -123,7 +208,7 @@ func (conf *Tomba) EmailFinder(params Params) (models.Finder, error) {
 // Enrichment The API lets you look up person and company data based on an email, For example, you could retrieve a person’s name, location and social handles from an email
 func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
 	finder := models.Finder{}
-	str, err := conf.TombaCall(ENRICHMENT_PATH, Params{"email": email}, nil)
+	str, err := conf.TombaCall(ENRICHMENT_PATH, Params{"email": email}, nil, nil)
 	if err != nil {
 		return finder, err
 	}
@@ -137,7 +222,7 @@ func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
 // AuthorFinder This API generates or retrieves the most likely email address from a blog post url.
 func (conf *Tomba) AuthorFinder(url string) (models.Finder, error) {
 	finder := models.Finder{}
-	str, err := conf.TombaCall(AUTHOR_PATH, Params{"url": url}, nil)
+	str, err := conf.TombaCall(AUTHOR_PATH, Params{"url": url}, nil, nil)
 	if err != nil {
 		return finder, err
 	}
@@ -151,7 +236,7 @@ func (conf *Tomba) AuthorFinder(url string) (models.Finder, error) {
 // LinkedinFinder  This API point generates or retrieves the most likely email address from a Linkedin URL.
 func (conf *Tomba) LinkedinFinder(url string) (models.Finder, error) {
 	finder := models.Finder{}
-	str, err := conf.TombaCall(LINKEDIN_PATH, Params{"url": url}, nil)
+	str, err := conf.TombaCall(LINKEDIN_PATH, Params{"url": url}, nil, nil)
 	if err != nil {
 		return finder, err
 	}
@@ -165,7 +250,7 @@ func (conf *Tomba) LinkedinFinder(url string) (models.Finder, error) {
 // EmailVerifier Verify the deliverability of an email address.
 func (conf *Tomba) EmailVerifier(email string) (models.Verifier, error) {
 	verifier := models.Verifier{}
-	str, err := conf.TombaCall(VERIFIER_PATH+email, nil, nil)
+	str, err := conf.TombaCall(VERIFIER_PATH+email, nil, nil, nil)
 	if err != nil {
 		return verifier, err
 	}
@@ -179,7 +264,7 @@ func (conf *Tomba) EmailVerifier(email string) (models.Verifier, error) {
 // Status Returns domain status if is webmail or disposable.
 func (conf *Tomba) Sources(email string) (models.Source, error) {
 	source := models.Source{}
-	str, err := conf.TombaCall(SOURCES_PATH, Params{"email": email}, nil)
+	str, err := conf.TombaCall(SOURCES_PATH, Params{"email": email}, nil, nil)
 	if err != nil {
 		return source, err
 	}
@@ -195,7 +280,7 @@ func (conf *Tomba) Sources(email string) (models.Source, error) {
 // see https://docs.tomba.io/api/finder#email-format
 func (conf *Tomba) EmailFormat(domain string) (models.Format, error) {
 	format := models.Format{}
-	str, err := conf.TombaCall(FORMAT_PATH, Params{"domain": domain}, nil)
+	str, err := conf.TombaCall(FORMAT_PATH, Params{"domain": domain}, nil, nil)
 	if err != nil {
 		return format, err
 	}
@@ -211,7 +296,7 @@ func (conf *Tomba) EmailFormat(domain string) (models.Format, error) {
 // see https://docs.tomba.io/api/finder#employees
 func (conf *Tomba) EmployeesCount(domain string) (models.Employees, error) {
 	employees := models.Employees{}
-	str, err := conf.TombaCall(EMPLOYEES_PATH, Params{"domain": domain}, nil)
+	str, err := conf.TombaCall(EMPLOYEES_PATH, Params{"domain": domain}, nil, nil)
 	if err != nil {
 		return employees, err
 	}
@@ -227,7 +312,7 @@ func (conf *Tomba) EmployeesCount(domain string) (models.Employees, error) {
 // see https://docs.tomba.io/api/~endpoints#similar
 func (conf *Tomba) SimilarDomains(domain string) (models.Similar, error) {
 	similarDomains := models.Similar{}
-	str, err := conf.TombaCall(SIMILAR_PATH, Params{"domain": domain}, nil)
+	str, err := conf.TombaCall(SIMILAR_PATH, Params{"domain": domain}, nil, nil)
 	if err != nil {
 		return similarDomains, err
 	}
@@ -243,7 +328,7 @@ func (conf *Tomba) SimilarDomains(domain string) (models.Similar, error) {
 // see https://docs.tomba.io/api/~endpoints#technology
 func (conf *Tomba) TechnologyCheck(domain string) (models.Technology, error) {
 	technology := models.Technology{}
-	str, err := conf.TombaCall("/technology", Params{"domain": domain}, nil)
+	str, err := conf.TombaCall("/technology", Params{"domain": domain}, nil, nil)
 	if err != nil {
 		return technology, err
 	}
@@ -257,7 +342,7 @@ func (conf *Tomba) TechnologyCheck(domain string) (models.Technology, error) {
 // Usage Check your monthly requests.
 func (conf *Tomba) Usage() (models.Usage, error) {
 	usage := models.Usage{}
-	str, err := conf.TombaCall(USAGE_PATH, nil, nil)
+	str, err := conf.TombaCall(USAGE_PATH, nil, nil, nil)
 	if err != nil {
 		return usage, err
 	}
@@ -271,7 +356,7 @@ func (conf *Tomba) Usage() (models.Usage, error) {
 // Logs Returns a your last 1,000 requests you made during the last 3 months.
 func (conf *Tomba) Logs() (models.Logs, error) {
 	logs := models.Logs{}
-	str, err := conf.TombaCall(LOGS_PATH, nil, nil)
+	str, err := conf.TombaCall(LOGS_PATH, nil, nil, nil)
 	if err != nil {
 		return logs, err
 	}
@@ -280,4 +365,411 @@ func (conf *Tomba) Logs() (models.Logs, error) {
 		return logs, err
 	}
 	return data, nil
+}
+
+// Helper function to convert BulkType to path
+func getBulkPath(bulkType models.BulkType) string {
+	return fmt.Sprintf(BULK_PATH, string(bulkType))
+}
+
+// GetAllBulks retrieves all bulk operations for a specific type
+func (conf *Tomba) GetAllBulks(bulkType models.BulkType, params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	path := getBulkPath(bulkType)
+
+	requestParams := make(Params)
+	if params != nil {
+		if params.Page > 0 {
+			requestParams["page"] = strconv.Itoa(params.Page)
+		}
+		if params.Limit > 0 {
+			requestParams["limit"] = strconv.Itoa(params.Limit)
+		}
+		if params.Direction != "" {
+			requestParams["direction"] = params.Direction
+		}
+		if params.Filter != "" {
+			requestParams["filter"] = params.Filter
+		}
+	}
+
+	method := "GET"
+	resp, err := conf.TombaCall(path, requestParams, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkListResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// GetBulk retrieves a specific bulk operation
+func (conf *Tomba) GetBulk(bulkType models.BulkType, id int64) (*models.BulkDetailResponse, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d", string(bulkType), id)
+
+	method := "GET"
+	resp, err := conf.TombaCall(path, Params{}, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkDetailResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// CreateBulk creates a new bulk operation
+func (conf *Tomba) CreateBulk(bulkType models.BulkType, params *models.BulkCreateParams) (*models.BulkCreateResponse, error) {
+	path := getBulkPath(bulkType)
+
+	requestParams := make(Params)
+	if params != nil {
+		requestParams["name"] = params.Name
+		if params.List != "" {
+			requestParams["list"] = params.List
+		}
+		requestParams["sources"] = strconv.FormatBool(params.Sources)
+		requestParams["notifie"] = strconv.FormatBool(params.Notifie)
+		requestParams["verify"] = strconv.FormatBool(params.Verify)
+		if params.Total > 0 {
+			requestParams["total"] = strconv.Itoa(params.Total)
+		}
+		if params.Delimiter != "" {
+			requestParams["delimiter"] = params.Delimiter
+		}
+		requestParams["valid"] = strconv.FormatBool(params.Valid)
+		if params.Column > 0 {
+			requestParams["column"] = strconv.Itoa(params.Column)
+		}
+	}
+
+	method := "POST"
+	resp, err := conf.TombaCall(path, requestParams, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkCreateResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// CreateBulkWithFile creates a new bulk operation with file upload
+func (conf *Tomba) CreateBulkWithFile(bulkType models.BulkType, params *models.BulkCreateParams, filePath string) (*models.BulkCreateResponse, error) {
+	path := getBulkPath(bulkType)
+
+	requestParams := make(Params)
+	if params != nil {
+		requestParams["name"] = params.Name
+		if params.List != "" {
+			requestParams["list"] = params.List
+		}
+		requestParams["sources"] = strconv.FormatBool(params.Sources)
+		requestParams["notifie"] = strconv.FormatBool(params.Notifie)
+		requestParams["verify"] = strconv.FormatBool(params.Verify)
+		if params.Total > 0 {
+			requestParams["total"] = strconv.Itoa(params.Total)
+		}
+		if params.Delimiter != "" {
+			requestParams["delimiter"] = params.Delimiter
+		}
+		requestParams["valid"] = strconv.FormatBool(params.Valid)
+		if params.Column > 0 {
+			requestParams["column"] = strconv.Itoa(params.Column)
+		}
+	}
+
+	fileUpload := &models.BulkFileUpload{
+		FilePath:  filePath,
+		FieldName: "file",
+	}
+
+	method := "POST"
+	resp, err := conf.TombaCall(path, requestParams, &method, fileUpload)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkCreateResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// CreateSearchBulk creates a new search bulk operation
+func (conf *Tomba) CreateSearchBulk(params *models.BulkSearchCreateParams) (*models.BulkCreateResponse, error) {
+	path := getBulkPath(models.BulkTypeSearch)
+	requestParams := make(Params)
+	if params != nil {
+		// Basic bulk params
+		requestParams["name"] = params.Name
+		if params.List != "" {
+			requestParams["list"] = params.List
+		}
+		requestParams["sources"] = (params.Sources)
+		requestParams["verify"] = (params.Verify)
+
+		// Search-specific params
+		requestParams["maximum"] = params.Maximum
+		requestParams["email_type"] = params.EmailType
+		requestParams["department"] = params.Department
+	}
+
+	method := "POST"
+	resp, err := conf.TombaCall(path, requestParams, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkCreateResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// CreateFinderBulk creates a new finder bulk operation with file upload
+func (conf *Tomba) CreateFinderBulk(params *models.BulkFinderCreateParams, filePath string) (*models.BulkCreateResponse, error) {
+	path := getBulkPath(models.BulkTypeFinder)
+
+	requestParams := make(Params)
+	if params != nil {
+		// Basic bulk params
+		requestParams["name"] = params.Name
+		if params.Delimiter != "" {
+			requestParams["delimiter"] = params.Delimiter
+		}
+		requestParams["verify"] = strconv.FormatBool(params.Verify)
+
+		// Finder-specific params
+		if params.ColumnFirst > 0 {
+			requestParams["column_first"] = strconv.Itoa(params.ColumnFirst)
+		}
+		if params.ColumnLast > 0 {
+			requestParams["column_last"] = strconv.Itoa(params.ColumnLast)
+		}
+		if params.ColumnName > 0 {
+			requestParams["column_name"] = strconv.Itoa(params.ColumnName)
+		}
+		if params.ColumnDomain > 0 {
+			requestParams["column_domain"] = strconv.Itoa(params.ColumnDomain)
+		}
+		requestParams["skip"] = strconv.FormatBool(params.Skip)
+	}
+
+	fileUpload := &models.BulkFileUpload{
+		FilePath:  filePath,
+		FieldName: "file",
+	}
+
+	method := "POST"
+	resp, err := conf.TombaCall(path, requestParams, &method, fileUpload)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkCreateResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// CreatePhoneValidatorBulk creates a new phone validator bulk operation
+func (conf *Tomba) CreatePhoneValidatorBulk(params *models.BulkPhoneValidatorCreateParams, filePath string) (*models.BulkCreateResponse, error) {
+	path := getBulkPath(models.BulkTypePhoneValidator)
+
+	requestParams := make(Params)
+	if params != nil {
+		// Basic bulk params
+		requestParams["name"] = params.Name
+		if params.Delimiter != "" {
+			requestParams["delimiter"] = params.Delimiter
+		}
+
+		// Phone validator specific params
+		if params.ColumnPhone > 0 {
+			requestParams["column_phone"] = strconv.Itoa(params.ColumnPhone)
+		}
+		if params.ColumnCountry > 0 {
+			requestParams["column_country"] = strconv.Itoa(params.ColumnCountry)
+		}
+	}
+
+	fileUpload := &models.BulkFileUpload{
+		FilePath:  filePath,
+		FieldName: "file",
+	}
+
+	method := "POST"
+	resp, err := conf.TombaCall(path, requestParams, &method, fileUpload)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkCreateResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// LaunchBulk launches a bulk operation
+func (conf *Tomba) LaunchBulk(bulkType models.BulkType, id int64) (*models.BulkSuccessResponse, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d", string(bulkType), id)
+
+	method := "PUT"
+	resp, err := conf.TombaCall(path, Params{}, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkSuccessResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// DeleteBulk deletes a bulk operation
+func (conf *Tomba) DeleteBulk(bulkType models.BulkType, id int64) (*models.BulkSuccessResponse, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d/delete", string(bulkType), id)
+
+	method := "DELETE"
+	resp, err := conf.TombaCall(path, Params{}, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkSuccessResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// ArchiveBulk archives a bulk operation
+func (conf *Tomba) ArchiveBulk(bulkType models.BulkType, id int64) (*models.BulkSuccessResponse, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d/archive", string(bulkType), id)
+
+	method := "DELETE"
+	resp, err := conf.TombaCall(path, Params{}, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkSuccessResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// RenameBulk renames a bulk operation
+func (conf *Tomba) RenameBulk(bulkType models.BulkType, id int64, params *models.BulkRenameParams) (*models.BulkSuccessResponse, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d/rename", string(bulkType), id)
+
+	requestParams := make(Params)
+	if params != nil {
+		requestParams["name"] = params.Name
+	}
+
+	method := "PUT"
+	resp, err := conf.TombaCall(path, requestParams, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkSuccessResponse
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// GetBulkProgress gets the progress of a bulk operation
+func (conf *Tomba) GetBulkProgress(bulkType models.BulkType, id int64) (*models.BulkProgress, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d/progress", string(bulkType), id)
+
+	method := "GET"
+	resp, err := conf.TombaCall(path, Params{}, &method, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.BulkProgress
+	err = json.Unmarshal(resp, &response)
+	return &response, err
+}
+
+// DownloadBulk downloads bulk operation results
+func (conf *Tomba) DownloadBulk(bulkType models.BulkType, id int64, params *models.BulkDownloadParams) ([]byte, error) {
+	path := fmt.Sprintf(BULK_PATH+"/%d/download", string(bulkType), id)
+
+	requestParams := make(Params)
+	if params != nil && params.Type != "" {
+		requestParams["type"] = params.Type
+	}
+
+	method := "GET"
+	return conf.TombaCall(path, requestParams, &method, nil)
+}
+
+// Convenience methods for specific bulk types
+
+// GetAllSearchBulks gets all search bulk operations
+func (conf *Tomba) GetAllSearchBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeSearch, params)
+}
+
+// GetAllSimilarBulks gets all similar bulk operations
+func (conf *Tomba) GetAllSimilarBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeSimilar, params)
+}
+
+// GetAllCompanyBulks gets all company bulk operations
+func (conf *Tomba) GetAllCompanyBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeCompany, params)
+}
+
+// GetAllFinderBulks gets all finder bulk operations
+func (conf *Tomba) GetAllFinderBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeFinder, params)
+}
+
+// GetAllEnrichBulks gets all enrich bulk operations
+func (conf *Tomba) GetAllEnrichBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeEnrich, params)
+}
+
+// GetAllLinkedInBulks gets all LinkedIn bulk operations
+func (conf *Tomba) GetAllLinkedInBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeLinkedIn, params)
+}
+
+// GetAllAuthorBulks gets all author bulk operations
+func (conf *Tomba) GetAllAuthorBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeAuthor, params)
+}
+
+// GetAllVerifierBulks gets all verifier bulk operations
+func (conf *Tomba) GetAllVerifierBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypeVerifier, params)
+}
+
+// GetAllPhoneFinderBulks gets all phone finder bulk operations
+func (conf *Tomba) GetAllPhoneFinderBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypePhoneFinder, params)
+}
+
+// GetAllPhoneValidatorBulks gets all phone validator bulk operations
+func (conf *Tomba) GetAllPhoneValidatorBulks(params *models.BulkGetParams) (*models.BulkListResponse, error) {
+	return conf.GetAllBulks(models.BulkTypePhoneValidator, params)
+}
+
+// SaveBulkResults saves bulk results to a file
+func (conf *Tomba) SaveBulkResults(bulkType models.BulkType, id int64, filePath string, downloadType string) error {
+	params := &models.BulkDownloadParams{}
+	if downloadType != "" {
+		params.Type = downloadType
+	}
+
+	data, err := conf.DownloadBulk(bulkType, id, params)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	return err
 }
