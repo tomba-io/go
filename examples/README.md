@@ -258,6 +258,8 @@ go run search_companies.go
 - **status.go** - Check if a domain is webmail or disposable
 - **source.go** - Get email sources
 - **similar_domains.go** - Find similar domains
+- **technology_check.go** - Get technologies used by a domain
+- **phone_validator.go** - Validate a phone number and get its information
 - **logs.go** - View your API request logs
 - **usage.go** - Check your monthly API usage
 
