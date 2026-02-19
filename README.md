@@ -3,20 +3,21 @@
 This is the official Go client library for the [Tomba.io](https://tomba.io) Email Finder API,
 allowing you to:
 
--   [Domain Search](https://tomba.io/domain-search) (Search emails are based on the website You give one domain name and it returns all the email addresses found on the internet.)
--   [Email Finder](https://tomba.io/email-finder) (This API endpoint generates or retrieves the most likely email address from a domain name, a first name and a last name..)
--   [Author Finder](https://tomba.io/author-finder) (Instantly discover the email addresses of article authors.)
--   [Enrichment](https://tomba.io/author-finder) (The Enrichment lets you find the current job title, company, location and social profiles of the person behind the email.)
--   [Linkedin Finder](https://tomba.io/author-finder) (The Linkedin lets you find the current job title, company, location and social profiles of the person behind the linkedin URL.)
--   [Email Verifier](https://tomba.io/email-verifier) (checks the deliverability of a given email address, verifies if it has been found in our database, and returns their sources.)
+- [Domain Search](https://tomba.io/domain-search) (Search emails are based on the website You give one domain name and it returns all the email addresses found on the internet.)
+- [Email Finder](https://tomba.io/email-finder) (This API endpoint generates or retrieves the most likely email address from a domain name, a first name and a last name..)
+- [Author Finder](https://tomba.io/author-finder) (Instantly discover the email addresses of article authors.)
+- [Enrichment](https://tomba.io/author-finder) (The Enrichment lets you find the current job title, company, location and social profiles of the person behind the email.)
+- [Linkedin Finder](https://tomba.io/author-finder) (The Linkedin lets you find the current job title, company, location and social profiles of the person behind the linkedin URL.)
+- [Email Verifier](https://tomba.io/email-verifier) (checks the deliverability of a given email address, verifies if it has been found in our database, and returns their sources.)
+- [Search Companies](https://tomba.io/reveal) (Search for companies using natural language queries or structured filters.)
 
 ## Features
 
--   Collect publicly available emails online (Html, execute JavaScript,files,).
--   No duplicate email No duplicate domain .
--   No webmail like Gmail,Outlook and the others.
--   We detect 15 type of hashes and remove them.
--   No disposable and temporary email address.
+- Collect publicly available emails online (Html, execute JavaScript,files,).
+- No duplicate email No duplicate domain .
+- No webmail like Gmail,Outlook and the others.
+- We detect 15 type of hashes and remove them.
+- No disposable and temporary email address.
 
 ## Getting Started
 
@@ -56,6 +57,20 @@ func main() {
 	}
 }
 ```
+
+#### Advanced Domain Search with Query Parameters
+
+```go
+result, err := client.DomainSearch(tomba.Params{
+    "domain":     "stripe.com",   // Domain name or company name
+    "country":    "US",           // Filter by country
+    "limit":      50,             // Number of results per page (max 100)
+    "page":       1,              // Page number for pagination
+    "department": "engineering",  // Filter by department
+})
+```
+
+Available `department` values: `executive`, `it`, `finance`, `management`, `communication`, `marketing`, `sales`, `legal`, `hr`, `support`, `engineering`
 
 #### Domain Search Response
 
@@ -159,6 +174,28 @@ func main() {
 }
 ```
 
+#### Advanced Email Finder with Query Parameters
+
+**Using first_name + last_name:**
+
+```go
+result, err := client.EmailFinder(tomba.Params{
+    "domain":     "stripe.com",
+    "first_name": "Patrick",
+    "last_name":  "Collison",
+})
+```
+
+**With enrich_mobile to get phone number:**
+
+```go
+result, err := client.EmailFinder(tomba.Params{
+    "domain":        "tomba.io",
+    "full_name":     "Mohamed Ben Rebia",
+    "enrich_mobile": true,  // Set to true to get the phone number associated with the email
+})
+```
+
 #### Email Finder Response
 
 ```json
@@ -209,13 +246,24 @@ import (
 )
 
 func main() {
-	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
+	client := tomba.New("ta_xxxxx", "ts_xxxxx")
 
-	result, err := tomba.EmailVerifier("b.mohamed@tomba.io")
+	result, err := client.EmailVerifier(tomba.Params{
+		"email": "b.mohamed@tomba.io",
+	})
 	if err == nil {
 		fmt.Println(result)
 	}
 }
+```
+
+#### Email Verifier with enrich_mobile
+
+```go
+result, err := client.EmailVerifier(tomba.Params{
+    "email":         "b.mohamed@tomba.io",
+    "enrich_mobile": true,  // Set to true to get the phone number associated with the email
+})
 ```
 
 #### Email Verifier Response
@@ -259,13 +307,93 @@ func main() {
 }
 ```
 
+### Search Companies
+
+Search for companies using natural language queries or structured filters.
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/tomba-io/go/tomba"
+	"github.com/tomba-io/go/tomba/models"
+)
+
+func main() {
+	client := tomba.New("ta_xxxxx", "ts_xxxxx")
+
+	// Natural language query
+	result, err := client.SearchCompanies(&models.RevealSearchRequest{
+		Query: "Real Estate in France",
+	})
+	if err == nil {
+		fmt.Println(result)
+	}
+}
+```
+
+#### Search Companies with Structured Filters
+
+```go
+result, err := client.SearchCompanies(&models.RevealSearchRequest{
+    Page: 1,
+    Filters: &models.RevealSearchFilters{
+        Company: &models.RevealCompanyFilters{
+            LocationCountry: &models.RevealCircularFilter{
+                Include: []string{"US", "UK"},
+            },
+            Industry: &models.RevealCircularFilter{
+                Include: []string{"Technology"},
+            },
+            Size: &models.RevealCircularFilter{
+                Include: []string{"101-500", "501-1000"},
+            },
+        },
+    },
+})
+```
+
+Available filter options: `LocationCountry`, `LocationCity`, `LocationState`, `Industry`, `Size`, `Type`, `Keywords`, `Founded`, `Technologies`, `Similar`, `Revenue`, `SIC`, `NAICS`
+
+#### Search Companies Response
+
+```json
+{
+    "success": true,
+    "data": {
+        "companies": [
+            {
+                "name": "Example Company",
+                "description": "A technology company",
+                "country": "US",
+                "state": "California",
+                "city": "San Francisco",
+                "industry": "Technology",
+                "company_size": "101-500",
+                "type": "Private",
+                "founded": "2015",
+                "website_url": "https://example.com",
+                "total_emails": 150,
+                "linkedin_url": "https://www.linkedin.com/company/example"
+            }
+        ],
+        "total": 1000,
+        "page": 1,
+        "limit": 10,
+        "pages": 100
+    }
+}
+```
+
 ## Examples
 
 Sample codes under [**examples/**](/examples/) folder.
 
 ## Documentation
 
-See the [official documentation](https://docs.tomba.io/introduction).
+See the [official documentation](https://docs.tomba.io).
 
 ### Other Libraries
 
