@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/tomba-io/go/tomba"
 )
 
 func main() {
-	tomba := tomba.New("ta_xxxxx", "ts_xxxxx")
+	client := tomba.New(os.Getenv("TOMBA_API_KEY"), os.Getenv("TOMBA_SECRET_KEY"))
 
-	result, err := tomba.AuthorFinder("https://clearbit.com/blog/company-name-to-domain-api")
+	result, err := client.AuthorFinder("https://clearbit.com/blog/company-name-to-domain-api")
 	if err != nil {
 		fmt.Println("Error : ", err)
 		return
