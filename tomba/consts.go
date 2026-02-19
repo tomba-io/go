@@ -38,4 +38,8 @@ const (
 	TECHNOLOGY_PATH = "/technology"
 	// Bulk path
 	BULK_PATH = "/bulk/%s"
+	// Reveal Search path (Search Companies)
+	REVEAL_SEARCH_PATH = "/reveal/search"
+	// Phone Finder path
+	PHONE_FINDER_PATH = "/phone-finder"
 )

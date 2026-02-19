@@ -206,9 +206,10 @@ func (conf *Tomba) EmailFinder(params Params) (models.Finder, error) {
 }
 
 // Enrichment The API lets you look up person and company data based on an email, For example, you could retrieve a person’s name, location and social handles from an email
-func (conf *Tomba) Enrichment(email string) (models.Finder, error) {
+// Parameters: email (required), enrich_mobile (optional - set to true to get phone number)
+func (conf *Tomba) Enrichment(params Params) (models.Finder, error) {
 	finder := models.Finder{}
-	str, err := conf.TombaCall(ENRICHMENT_PATH, Params{"email": email}, nil, nil)
+	str, err := conf.TombaCall(ENRICHMENT_PATH, params, nil, nil)
 	if err != nil {
 		return finder, err
 	}
@@ -233,10 +234,11 @@ func (conf *Tomba) AuthorFinder(url string) (models.Finder, error) {
 	return data, nil
 }
 
-// LinkedinFinder  This API point generates or retrieves the most likely email address from a Linkedin URL.
-func (conf *Tomba) LinkedinFinder(url string) (models.Finder, error) {
+// LinkedinFinder This API point generates or retrieves the most likely email address from a Linkedin URL.
+// Parameters: url (required), enrich_mobile (optional - set to true to get phone number)
+func (conf *Tomba) LinkedinFinder(params Params) (models.Finder, error) {
 	finder := models.Finder{}
-	str, err := conf.TombaCall(LINKEDIN_PATH, Params{"url": url}, nil, nil)
+	str, err := conf.TombaCall(LINKEDIN_PATH, params, nil, nil)
 	if err != nil {
 		return finder, err
 	}
@@ -247,10 +249,32 @@ func (conf *Tomba) LinkedinFinder(url string) (models.Finder, error) {
 	return data, nil
 }
 
+// PhoneFinder Search for phone numbers based on an email, domain, or LinkedIn URL.
+// Parameters:
+//   - email (optional): The email address you want to find phone for
+//   - domain (optional): Domain name from which you want to find the phone numbers (e.g., stripe.com)
+//   - linkedin (optional): The URL of the LinkedIn profile (e.g., https://www.linkedin.com/in/alex-maccaw-ab592978)
+//   - full (optional): Set to true to get an array of all phone numbers associated with the email/domain/LinkedIn URL
+//
+// At least one of email, domain, or linkedin must be provided.
+func (conf *Tomba) PhoneFinder(params Params) (models.Phone, error) {
+	phone := models.Phone{}
+	str, err := conf.TombaCall(PHONE_FINDER_PATH, params, nil, nil)
+	if err != nil {
+		return phone, err
+	}
+	data, err := models.UnmarshalPhone([]byte(str))
+	if err != nil {
+		return phone, err
+	}
+	return data, nil
+}
+
 // EmailVerifier Verify the deliverability of an email address.
-func (conf *Tomba) EmailVerifier(email string) (models.Verifier, error) {
+// Parameters: email (required), enrich_mobile (optional - set to true to get phone number)
+func (conf *Tomba) EmailVerifier(params Params) (models.Verifier, error) {
 	verifier := models.Verifier{}
-	str, err := conf.TombaCall(VERIFIER_PATH+email, nil, nil, nil)
+	str, err := conf.TombaCall(VERIFIER_PATH, params, nil, nil)
 	if err != nil {
 		return verifier, err
 	}
@@ -335,6 +359,37 @@ func (conf *Tomba) TechnologyCheck(domain string) (models.Technology, error) {
 	data, err := models.UnmarshalTechnology([]byte(str))
 	if err != nil {
 		return technology, err
+	}
+	return data, nil
+}
+
+// SearchCompanies searches for companies using natural language queries or structured filters.
+// The AI assistant will automatically generate appropriate filters from your query.
+// see https://docs.tomba.io/api/reveal#search-companies
+func (conf *Tomba) SearchCompanies(request *models.RevealSearchRequest) (models.RevealSearchResponse, error) {
+	response := models.RevealSearchResponse{}
+
+	requestParams := make(Params)
+	if request != nil {
+		if request.Query != "" {
+			requestParams["query"] = request.Query
+		}
+		if request.Page > 0 {
+			requestParams["page"] = request.Page
+		}
+		if request.Filters != nil {
+			requestParams["filters"] = request.Filters
+		}
+	}
+
+	method := "POST"
+	str, err := conf.TombaCall(REVEAL_SEARCH_PATH, requestParams, &method, nil)
+	if err != nil {
+		return response, err
+	}
+	data, err := models.UnmarshalRevealSearch([]byte(str))
+	if err != nil {
+		return response, err
 	}
 	return data, nil
 }
