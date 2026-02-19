@@ -270,6 +270,25 @@ func (conf *Tomba) PhoneFinder(params Params) (models.Phone, error) {
 	return data, nil
 }
 
+// PhoneValidator validates a phone number and retrieves its associated information.
+// Parameters:
+//   - phone (required): The phone number you want to validate
+//   - country_code (optional): Country code of the phone number (e.g., "US")
+//
+// see https://docs.tomba.io/api/phone#phone-validator
+func (conf *Tomba) PhoneValidator(params Params) (models.PhoneValidator, error) {
+	phoneValidator := models.PhoneValidator{}
+	str, err := conf.TombaCall(PHONE_VALIDATOR_PATH, params, nil, nil)
+	if err != nil {
+		return phoneValidator, err
+	}
+	data, err := models.UnmarshalPhoneValidator([]byte(str))
+	if err != nil {
+		return phoneValidator, err
+	}
+	return data, nil
+}
+
 // EmailVerifier Verify the deliverability of an email address.
 // Parameters: email (required), enrich_mobile (optional - set to true to get phone number)
 func (conf *Tomba) EmailVerifier(params Params) (models.Verifier, error) {

@@ -42,4 +42,6 @@ const (
 	REVEAL_SEARCH_PATH = "/reveal/search"
 	// Phone Finder path
 	PHONE_FINDER_PATH = "/phone-finder"
+	// Phone Validator path
+	PHONE_VALIDATOR_PATH = "/phone-validator"
 )
