@@ -55,7 +55,7 @@ type SearchOrganization struct {
 	Disposable    bool              `json:"disposable"`
 	Webmail       bool              `json:"webmail"`
 	WebsiteURL    *string           `json:"website_url"`
-	PhoneNumber   string            `json:"phone_number"`
+	PhoneNumber   bool              `json:"phone_number"`
 	Industries    interface{}       `json:"industries"`
 	PostalCode    interface{}       `json:"postal_code"`
 	EmployeeCount int64             `json:"employee_count"`

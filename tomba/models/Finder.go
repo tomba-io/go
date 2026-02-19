@@ -35,6 +35,7 @@ type FinderData struct {
 	Score        int64              `json:"score"`
 	Verification FinderVerification `json:"verification"`
 	Sources      []SourceElement    `json:"sources"`
+	PhoneData    []PhoneData        `json:"phone_data,omitempty"`
 }
 
 type FinderVerification struct {

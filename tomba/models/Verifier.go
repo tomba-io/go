@@ -17,8 +17,9 @@ type Verifier struct {
 }
 
 type VerifierData struct {
-	Email   VerifierEmail   `json:"email"`
-	Sources []SourceElement `json:"sources"`
+	Email     VerifierEmail   `json:"email"`
+	Sources   []SourceElement `json:"sources"`
+	PhoneData []PhoneData     `json:"phone_data,omitempty"`
 }
 
 type VerifierEmail struct {
