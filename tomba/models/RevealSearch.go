@@ -65,25 +65,30 @@ type RevealSearchData struct {
 
 // RevealCompany represents a company in the search results
 type RevealCompany struct {
-	Name          string `json:"name,omitempty"`
-	Description   string `json:"description,omitempty"`
-	Country       string `json:"country,omitempty"`
-	State         string `json:"state,omitempty"`
-	City          string `json:"city,omitempty"`
-	StreetAddress string `json:"street_address,omitempty"`
-	PostalCode    string `json:"postal_code,omitempty"`
-	Industry      string `json:"industry,omitempty"`
-	CompanySize   string `json:"company_size,omitempty"`
-	Type          string `json:"type,omitempty"`
-	Founded       string `json:"founded,omitempty"`
-	WebsiteURL    string `json:"website_url,omitempty"`
-	TotalEmails   int    `json:"total_emails,omitempty"`
-	Revenue       string `json:"revenue,omitempty"`
-	PhoneNumber   bool   `json:"phone_number,omitempty"`
-	LinkedinURL   string `json:"linkedin_url,omitempty"`
-	FacebookURL   string `json:"facebook_url,omitempty"`
-	TwitterURL    string `json:"twitter_url,omitempty"`
-	TotalSimilar  int    `json:"total_similar,omitempty"`
+	Name          string  `json:"name,omitempty"`
+	Description   string  `json:"description,omitempty"`
+	Country       string  `json:"country,omitempty"`
+	State         string  `json:"state,omitempty"`
+	City          string  `json:"city,omitempty"`
+	StreetAddress string  `json:"street_address,omitempty"`
+	PostalCode    string  `json:"postal_code,omitempty"`
+	Industry      string  `json:"industry,omitempty"`
+	CompanySize   string  `json:"company_size,omitempty"`
+	Type          string  `json:"type,omitempty"`
+	Founded       string  `json:"founded,omitempty"`
+	WebsiteURL    string  `json:"website_url,omitempty"`
+	TotalEmails   int     `json:"total_emails,omitempty"`
+	Revenue       string  `json:"revenue,omitempty"`
+	PhoneNumber   bool    `json:"phone_number,omitempty"`
+	LinkedinURL   string  `json:"linkedin_url,omitempty"`
+	FacebookURL   string  `json:"facebook_url,omitempty"`
+	TwitterURL    string  `json:"twitter_url,omitempty"`
+	InstagramURL  *string `json:"instagram_url,omitempty"`
+	GithubURL     *string `json:"github_url,omitempty"`
+	YoutubeURL    *string `json:"youtube_url,omitempty"`
+	PinterestURL  *string `json:"pinterest_url,omitempty"`
+	TiktokURL     *string `json:"tiktok_url,omitempty"`
+	TotalSimilar  int     `json:"total_similar,omitempty"`
 }
 
 // RevealSearchMeta contains metadata about the search results

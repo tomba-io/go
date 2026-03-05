@@ -34,7 +34,7 @@ type SearchEmail struct {
 	Position     *string            `json:"position"`
 	Department   *string            `json:"department"`
 	Seniority    *string            `json:"seniority"`
-	Twitter      interface{}        `json:"twitter"`
+	Twitter      *string            `json:"twitter"`
 	Linkedin     *string            `json:"linkedin"`
 	AcceptAll    bool               `json:"accept_all"`
 	Pattern      *string            `json:"pattern"`
@@ -56,15 +56,15 @@ type SearchOrganization struct {
 	Webmail       bool              `json:"webmail"`
 	WebsiteURL    *string           `json:"website_url"`
 	PhoneNumber   bool              `json:"phone_number"`
-	Industries    interface{}       `json:"industries"`
-	PostalCode    interface{}       `json:"postal_code"`
+	Industries    *string           `json:"industries"`
+	PostalCode    *string           `json:"postal_code"`
 	EmployeeCount int64             `json:"employee_count"`
-	Founded       interface{}       `json:"founded"`
-	CompanySize   interface{}       `json:"company_size"`
+	Founded       *string           `json:"founded"`
+	CompanySize   *string           `json:"company_size"`
 	LastUpdated   string            `json:"last_updated"`
-	Revenue       interface{}       `json:"revenue"`
+	Revenue       *string           `json:"revenue"`
 	AcceptAll     bool              `json:"accept_all"`
-	Description   interface{}       `json:"description"`
+	Description   *string           `json:"description"`
 	Pattern       *string           `json:"pattern"`
 	DomainScore   int64             `json:"domain_score"`
 	Organization  string            `json:"organization"`
@@ -72,16 +72,21 @@ type SearchOrganization struct {
 }
 
 type SearchLocation struct {
-	Country       interface{} `json:"country"`
-	City          interface{} `json:"city"`
-	State         interface{} `json:"state"`
-	StreetAddress interface{} `json:"street_address"`
+	Country       *string `json:"country"`
+	City          *string `json:"city"`
+	State         *string `json:"state"`
+	StreetAddress *string `json:"street_address"`
 }
 
 type SearchSocialLinks struct {
-	TwitterURL  interface{} `json:"twitter_url"`
-	FacebookURL string      `json:"facebook_url"`
-	LinkedinURL string      `json:"linkedin_url"`
+	TwitterURL   *string `json:"twitter_url"`
+	FacebookURL  *string `json:"facebook_url"`
+	LinkedinURL  *string `json:"linkedin_url"`
+	InstagramURL *string `json:"instagram_url"`
+	GithubURL    *string `json:"github_url"`
+	YoutubeURL   *string `json:"youtube_url"`
+	PinterestURL *string `json:"pinterest_url"`
+	TiktokURL    *string `json:"tiktok_url"`
 }
 
 type SearchWhois struct {
