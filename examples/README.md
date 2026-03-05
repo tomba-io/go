@@ -183,6 +183,15 @@ client.LinkedinFinder(tomba.Params{
 })
 ```
 
+**With full (returns array of FinderData):**
+
+```go
+client.LinkedinFinder(tomba.Params{
+    "url":  "https://www.linkedin.com/in/davidebarros",
+    "full": true,
+})
+```
+
 ```bash
 go run linkedin_finder.go
 ```
