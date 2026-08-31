@@ -10,7 +10,7 @@ import (
 func main() {
 	client := tomba.New(os.Getenv("TOMBA_API_KEY"), os.Getenv("TOMBA_SECRET_KEY"))
 
-	result, err := client.AuthorFinder("https://clearbit.com/blog/company-name-to-domain-api")
+	result, err := client.AuthorFinder(tomba.Params{"url": "https://clearbit.com/blog/company-name-to-domain-api"})
 	if err != nil {
 		fmt.Println("Error : ", err)
 		return

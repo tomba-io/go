@@ -19,7 +19,7 @@ const (
 	// Linkedin path
 	LINKEDIN_PATH = "/linkedin"
 	// Verifier path
-	VERIFIER_PATH = "/email-verifier/"
+	VERIFIER_PATH = "/email-verifier"
 	// Email Sources path
 	SOURCES_PATH = "/email-sources"
 	// Email Count path
@@ -27,11 +27,11 @@ const (
 	// Domain status path
 	STATUS_PATH = "/domain-status"
 	// Autocomplete path
-	AUTOCOMPLETE_PATH = "/domains-suggestion"
+	AUTOCOMPLETE_PATH = "/domain-suggestions"
 	// Format path
-	FORMAT_PATH = "/format"
+	FORMAT_PATH = "/email-format"
 	// Employees path
-	EMPLOYEES_PATH = "/employees"
+	EMPLOYEES_PATH = "/location"
 	// Similar path
 	SIMILAR_PATH = "/similar"
 	// technology path
@@ -44,4 +44,20 @@ const (
 	PHONE_FINDER_PATH = "/phone-finder"
 	// Phone Validator path
 	PHONE_VALIDATOR_PATH = "/phone-validator"
+	// People Find path
+	PEOPLE_FIND_PATH = "/people/find"
+	// Companies Find path
+	COMPANIES_FIND_PATH = "/companies/find"
+	// Combined Find path
+	COMBINED_FIND_PATH = "/combined/find"
+	// Leads path
+	LEADS_PATH = "/leads"
+	// Leads Lists path
+	LEADS_LISTS_PATH = "/leads_lists"
+	// Attributes path
+	ATTRIBUTES_PATH = "/attributes"
+	// Keys path
+	KEYS_PATH = "/keys"
+	// Flag path
+	FLAG_PATH = "/flag"
 )

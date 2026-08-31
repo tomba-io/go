@@ -1,41 +1,56 @@
-# [<img src="https://app.tomba.io/logo.svg" alt="Tomba" width="25"/>](https://tomba.io/) Tomba Email Finder Go Client Library
+# [<img src="https://tomba.io/logo.svg" alt="Tomba" width="25"/>](https://tomba.io/) Tomba Go SDK
 
-This is the official Go client library for the [Tomba.io](https://tomba.io) Email Finder API,
-allowing you to:
+> The #1 Rated Email Intelligence Platform — Find professional emails with unmatched accuracy.
 
-- [Domain Search](https://tomba.io/domain-search) (Search emails are based on the website You give one domain name and it returns all the email addresses found on the internet.)
-- [Email Finder](https://tomba.io/email-finder) (This API endpoint generates or retrieves the most likely email address from a domain name, a first name and a last name..)
-- [Author Finder](https://tomba.io/author-finder) (Instantly discover the email addresses of article authors.)
-- [Enrichment](https://tomba.io/author-finder) (The Enrichment lets you find the current job title, company, location and social profiles of the person behind the email.)
-- [Linkedin Finder](https://tomba.io/author-finder) (The Linkedin lets you find the current job title, company, location and social profiles of the person behind the linkedin URL.)
-- [Email Verifier](https://tomba.io/email-verifier) (checks the deliverability of a given email address, verifies if it has been found in our database, and returns their sources.)
-- [Search Companies](https://tomba.io/reveal) (Search for companies using natural language queries or structured filters.)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tomba-io/go.svg)](https://pkg.go.dev/github.com/tomba-io/go/tomba)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-## Features
+## About Tomba
 
-- Collect publicly available emails online (Html, execute JavaScript,files,).
-- No duplicate email No duplicate domain .
-- No webmail like Gmail,Outlook and the others.
-- We detect 15 type of hashes and remove them.
-- No disposable and temporary email address.
+[Tomba.io](https://tomba.io) is the #1 rated email intelligence platform, trusted by **150,000+ sales teams** worldwide.
+
+- **Best Email Finder** — 98% accuracy, ranked #1 in independent benchmarks
+- **Best Email Verification** — Real-time SMTP verification with catch-all detection
+- **Best Phone Finder** — Direct dial numbers linked to professional emails
+- **Best Domain Search** — 450M+ verified contacts across all industries
+- **81% Coverage** — The highest in the industry, proven in 5,000-lead independent tests
+
+### Why Tomba?
+
+| Feature             | Tomba              | Others        |
+| ------------------- | ------------------ | ------------- |
+| Email Coverage      | **81%**            | 30-60%        |
+| Verification        | **Real-time SMTP** | Pattern-based |
+| Phone Numbers       | **Direct dials**   | Limited       |
+| Catch-all Detection | **AI-powered**     | Basic         |
+| API Rate Limits     | **Generous**       | Restrictive   |
+
+[Get your free API key](https://app.tomba.io/auth/register) — No credit card required.
 
 ## Getting Started
 
-You'll need an Tomba API access token, which you can get by signing up for a free account at [https://app.tomba.io/auth/register](https://app.tomba.io/auth/register)
-
-The free plan is limited to 50 search request and 50 verification a month, To enable all the data fields and additional request volumes see [https://tomba.io/pricing](https://tomba.io/pricing).
+1. **Sign up** for a free account at [app.tomba.io](https://app.tomba.io/auth/register)
+2. **Get your API key** from the [API dashboard](https://app.tomba.io/api)
+3. **Install** the SDK (see below)
+4. **Start finding emails** with just a few lines of code
 
 ## Installation
 
 ```bash
-go get github.com/tomba-io/go/tomba
+go get github.com/tomba-io/go
 ```
 
-## Usage
+## Authentication
 
-### Domain Search
+Get your API credentials from [app.tomba.io/api](https://app.tomba.io/api).
 
-get email addresses found on the internet.
+```go
+import "github.com/tomba-io/go/tomba"
+
+client := tomba.New("ta_xxxx", "ts_xxxx")
+```
+
+## Quick Start
 
 ```go
 package main
@@ -47,374 +62,422 @@ import (
 )
 
 func main() {
-	client := tomba.New("ta_xxxxx", "ts_xxxxx")
+	client := tomba.New("ta_xxxx", "ts_xxxx")
 
 	result, err := client.DomainSearch(tomba.Params{
-		"domain": "tomba.io",
+		"domain": "stripe.com",
 	})
-	if err == nil {
-		fmt.Println(result)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
+	fmt.Println(result)
 }
 ```
 
-#### Advanced Domain Search with Query Parameters
+## Services
+
+### Domain Search
+
+Search for email addresses associated with a domain.
 
 ```go
+// Basic search
 result, err := client.DomainSearch(tomba.Params{
-    "domain":     "stripe.com",   // Domain name or company name
-    "country":    "US",           // Filter by country
-    "limit":      50,             // Number of results per page (max 100)
-    "page":       1,              // Page number for pagination
-    "department": "engineering",  // Filter by department
+	"domain": "stripe.com",
 })
-```
 
-Available `department` values: `executive`, `it`, `finance`, `management`, `communication`, `marketing`, `sales`, `legal`, `hr`, `support`, `engineering`
-
-#### Domain Search Response
-
-```json
-{
-  "data": {
-    "organization": {
-      "location": {
-        "country": "US",
-        "city": "San Francisco",
-        "state": "California",
-        "street_address": "-122.41"
-      },
-      "social_links": {
-        "twitter_url": "https://twitter.com/stripe",
-        "facebook_url": "https://www.facebook.com/StripeHQ",
-        "linkedin_url": "https://www.linkedin.com/company/2135371"
-      },
-      "disposable": false,
-      "webmail": false,
-      "website_url": "stripe.com",
-      "phone_number": "",
-      "industries": "internet",
-      "postal_code": "94107",
-      "employee_count": 976,
-      "founded": "2010",
-      "company_size": "1001-5000",
-      "last_updated": "2023-03-28T16:21:55+01:00",
-      "revenue": "150000",
-      "accept_all": true,
-      "description": "Stripe is a financial infrastructure platform for businesses. Millions of companies—from the world’s largest enterprises to the most ambitious startups—use Stripe to accept payments, grow their revenue, and accelerate new business opportunities. Headquartered in San Francisco and Dublin, the company aims to increase the GDP of the internet.",
-      "pattern": "{first}",
-      "domain_score": 30,
-      "organization": "stripe",
-      "whois": {
-        "registrar_name": "SafeNames Ltd.",
-        "created_date": "1995-09-12 00:00:00",
-        "referral_url": "https://www.safenames.net/"
-      }
-    },
-    "emails": [
-      {
-        "email": "**@stripe.com",
-        "first_name": "**",
-        "last_name": "**",
-        "full_name": "** **",
-        "gender": "female",
-        "phone_number": null,
-        "type": "personal",
-        "country": "US",
-        "position": "Financial Crimes Analyst",
-        "department": "finance",
-        "seniority": "senior",
-        "twitter": null,
-        "linkedin": "https://www.linkedin.com/in/**",
-        "accept_all": true,
-        "pattern": "{first}",
-        "score": 90,
-        "verification": { "date": null, "status": null },
-        "last_updated": "2023-02-21T14:18:24+01:00",
-        "sources": [
-          {
-            "uri": "https://stripe.com/docs/cli",
-            "website_url": "stripe.com",
-            "extracted_on": "2022-03-08T01:23:16+01:00",
-            "last_seen_on": "2022-08-04T09:42:10+01:00",
-            "still_on_page": true
-          }
-        ]
-      },
-      ...
-      ...
-      ...
-      ...
-    ]
-  },
-  "meta": { "total": 2031, "pageSize": 10, "current": 0, "total_pages": 204 }
-}
+// With filters
+result, err := client.DomainSearch(tomba.Params{
+	"domain":     "stripe.com",
+	"page":       1,
+	"limit":      50,
+	"country":    "US",
+	"department": "engineering",
+})
 ```
 
 ### Email Finder
 
-Find the verified email address of any professional.
+Generate or retrieve the most likely email address from a domain and name.
 
 ```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/tomba-io/go/tomba"
-)
-
-func main() {
-	client := tomba.New("ta_xxxxx", "ts_xxxxx")
-
-	result, err := client.EmailFinder(tomba.Params{"domain": "asana.com", "full_name": "moskoz dustin"})
-	if err == nil {
-		fmt.Println(result)
-	}
-}
-```
-
-#### Advanced Email Finder with Query Parameters
-
-**Using first_name + last_name:**
-
-```go
+// Using first_name + last_name
 result, err := client.EmailFinder(tomba.Params{
-    "domain":     "stripe.com",
-    "first_name": "Patrick",
-    "last_name":  "Collison",
+	"domain":     "stripe.com",
+	"first_name": "Patrick",
+	"last_name":  "Collison",
 })
-```
 
-**With enrich_mobile to get phone number:**
-
-```go
+// Using full_name with enrich_mobile
 result, err := client.EmailFinder(tomba.Params{
-    "domain":        "tomba.io",
-    "full_name":     "Mohamed Ben Rebia",
-    "enrich_mobile": true,  // Set to true to get the phone number associated with the email
+	"domain":        "stripe.com",
+	"full_name":     "Patrick Collison",
+	"enrich_mobile": true,
 })
-```
-
-#### Email Finder Response
-
-```json
-{
-  "data": {
-    "email": "b.mohamed@tomba.io",
-    "first_name": "Mohamed",
-    "last_name": "Ben rebia",
-    "full_name": "Mohamed Ben rebia",
-    "gender": "male",
-    "country": null,
-    "position": "CEO",
-    "twitter": null,
-    "linkedin": "https://www.linkedin.com/in/mohamed-ben-rebia",
-    "phone_number": null,
-    "accept_all": null,
-    "website_url": "tomba.io",
-    "company": "Tomba technology web service LLC ",
-    "score": 99,
-    "verification": { "date": "2022-05-25", "status": "valid" },
-    "sources": [
-      {
-        "uri": "https://github.com/tomba-io/generic-emails/blob/084fc1a63d3cdaf9a34f255bedc2baea49a8e8b9/src/lib/validation/hash.ts",
-        "website_url": "github.com",
-        "extracted_on": "2021-02-08T20:09:54+01:00",
-        "last_seen_on": "2021-02-08T22:43:40+01:00",
-        "still_on_page": true
-      },
-     ...
-     ...
-     ...
-    ]
-  }
-}
 ```
 
 ### Email Verifier
 
-Verify the validity of any professional email address with the most complete email checker.
-
-```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/tomba-io/go/tomba"
-)
-
-func main() {
-	client := tomba.New("ta_xxxxx", "ts_xxxxx")
-
-	result, err := client.EmailVerifier(tomba.Params{
-		"email": "b.mohamed@tomba.io",
-	})
-	if err == nil {
-		fmt.Println(result)
-	}
-}
-```
-
-#### Email Verifier with enrich_mobile
+Verify the deliverability of an email address.
 
 ```go
 result, err := client.EmailVerifier(tomba.Params{
-    "email":         "b.mohamed@tomba.io",
-    "enrich_mobile": true,  // Set to true to get the phone number associated with the email
+	"email": "b.mohamed@tomba.io",
 })
 ```
 
-#### Email Verifier Response
+### Author Finder
 
-```json
-{
-  "data": {
-    "email": {
-      "mx_records": true,
-      "smtp_server": true,
-      "smtp_check": true,
-      "accept_all": false,
-      "block": false,
-      "email": "b.mohamed@tomba.io",
-      "gibberish": false,
-      "disposable": false,
-      "webmail": false,
-      "regex": true,
-      "whois": {
-        "registrar_name": "NameCheap, Inc.",
-        "created_date": "2020-07-07 20:54:07",
-        "referral_url": "https://www.namecheap.com/"
-      },
-      "status": "valid",
-      "result": "deliverable",
-      "score": 100
-    },
-    "sources": [
-      {
-        "uri": "https://github.com/tomba-io/generic-emails/blob/084fc1a63d3cdaf9a34f255bedc2baea49a8e8b9/src/lib/validation/hash.ts",
-        "website_url": "github.com",
-        "extracted_on": "2021-02-08T20:09:54+01:00",
-        "last_seen_on": "2021-02-08T22:43:40+01:00",
-        "still_on_page": true
-      },
-      ...
-      ...
-      ...
-    ]
-  }
-}
+Discover the email address of an article's author.
+
+```go
+result, err := client.AuthorFinder(tomba.Params{
+	"url": "https://tomba.io/blog",
+})
 ```
 
-### Search Companies
+### LinkedIn Finder
+
+Find the email address associated with a LinkedIn profile URL.
+
+```go
+result, err := client.LinkedinFinder(tomba.Params{
+	"url":          "https://www.linkedin.com/in/username",
+	"enrich_mobile": true,
+	"full":          true,
+})
+```
+
+### Email Enrichment
+
+Enrich an email address with additional contact data.
+
+```go
+result, err := client.Enrichment(tomba.Params{
+	"email": "b.mohamed@tomba.io",
+})
+```
+
+### Phone Finder
+
+Search for phone numbers based on email, domain, or LinkedIn URL.
+
+```go
+// By email
+result, err := client.PhoneFinder(tomba.Params{
+	"email": "b.mohamed@tomba.io",
+})
+
+// By domain
+result, err := client.PhoneFinder(tomba.Params{
+	"domain": "tomba.io",
+})
+
+// By LinkedIn URL
+result, err := client.PhoneFinder(tomba.Params{
+	"linkedin": "https://www.linkedin.com/in/username",
+})
+```
+
+### Phone Validator
+
+Validate a phone number and check carrier information.
+
+```go
+result, err := client.PhoneValidator(tomba.Params{
+	"phone": "+1234567890",
+})
+```
+
+### Email Count
+
+Get the number of email addresses found for a domain.
+
+```go
+result, err := client.Count("stripe.com")
+```
+
+### Domain Status
+
+Check if a domain is webmail or disposable.
+
+```go
+result, err := client.Status("gmail.com")
+```
+
+### Domain Suggestions
+
+Auto-complete company names and retrieve logo and domain information.
+
+```go
+result, err := client.AutoComplete("stripe")
+```
+
+### Email Sources
+
+Find where an email address was found on the web.
+
+```go
+result, err := client.Sources("b.mohamed@tomba.io")
+```
+
+### Email Format
+
+Get the email format pattern used by a company.
+
+```go
+result, err := client.EmailFormat("stripe.com")
+```
+
+### Similar Domains
+
+Find domains similar to a given domain.
+
+```go
+result, err := client.SimilarDomains("stripe.com")
+```
+
+### Technology Finder
+
+Retrieve the technologies used by a domain.
+
+```go
+result, err := client.TechnologyCheck("stripe.com")
+```
+
+### Location
+
+Get employee location and count data for a domain.
+
+```go
+result, err := client.EmployeesCount("stripe.com")
+```
+
+### Person API (Enrichment)
+
+Retrieve person information based on an email address.
+
+```go
+result, err := client.PersonFind(tomba.Params{
+	"email": "b.mohamed@tomba.io",
+})
+```
+
+### Company API (Enrichment)
+
+Retrieve company information based on a domain.
+
+```go
+result, err := client.CompanyFind(tomba.Params{
+	"domain": "stripe.com",
+})
+```
+
+### Combined API (Enrichment)
+
+Retrieve combined person and company information based on an email address.
+
+```go
+result, err := client.CombinedFind(tomba.Params{
+	"email": "b.mohamed@tomba.io",
+})
+```
+
+### Companies Search (Reveal)
 
 Search for companies using natural language queries or structured filters.
 
 ```go
-package main
+import "github.com/tomba-io/go/tomba/models"
 
-import (
-	"fmt"
-
-	"github.com/tomba-io/go/tomba"
-	"github.com/tomba-io/go/tomba/models"
-)
-
-func main() {
-	client := tomba.New("ta_xxxxx", "ts_xxxxx")
-
-	// Natural language query
-	result, err := client.SearchCompanies(&models.RevealSearchRequest{
-		Query: "Real Estate in France",
-	})
-	if err == nil {
-		fmt.Println(result)
-	}
-}
-```
-
-#### Search Companies with Structured Filters
-
-```go
+// Natural language query
 result, err := client.SearchCompanies(&models.RevealSearchRequest{
-    Page: 1,
-    Filters: &models.RevealSearchFilters{
-        Company: &models.RevealCompanyFilters{
-            LocationCountry: &models.RevealCircularFilter{
-                Include: []string{"US", "UK"},
-            },
-            Industry: &models.RevealCircularFilter{
-                Include: []string{"Technology"},
-            },
-            Size: &models.RevealCircularFilter{
-                Include: []string{"101-500", "501-1000"},
-            },
-        },
-    },
+	Query: "Real Estate in France",
+})
+
+// With structured filters
+result, err := client.SearchCompanies(&models.RevealSearchRequest{
+	Page: 1,
+	Filters: &models.RevealSearchFilters{
+		Company: &models.RevealCompanyFilters{
+			LocationCountry: &models.RevealCircularFilter{
+				Include: []string{"US", "UK"},
+			},
+			Industry: &models.RevealCircularFilter{
+				Include: []string{"Technology"},
+			},
+			Size: &models.RevealCircularFilter{
+				Include: []string{"101-500", "501-1000"},
+			},
+		},
+	},
 })
 ```
 
-Available filter options: `LocationCountry`, `LocationCity`, `LocationState`, `Industry`, `Size`, `Type`, `Keywords`, `Founded`, `Technologies`, `Similar`, `Revenue`, `SIC`, `NAICS`
+### Leads
 
-#### Search Companies Response
+Manage lead records programmatically.
 
-```json
-{
-    "success": true,
-    "data": {
-        "companies": [
-            {
-                "name": "Example Company",
-                "description": "A technology company",
-                "country": "US",
-                "state": "California",
-                "city": "San Francisco",
-                "industry": "Technology",
-                "company_size": "101-500",
-                "type": "Private",
-                "founded": "2015",
-                "website_url": "https://example.com",
-                "total_emails": 150,
-                "linkedin_url": "https://www.linkedin.com/company/example"
-            }
-        ],
-        "total": 1000,
-        "page": 1,
-        "limit": 10,
-        "pages": 100
-    }
-}
+```go
+// List leads
+result, err := client.ListLeads(tomba.Params{"page": 1, "limit": 10})
+
+// Get a lead
+result, err := client.GetLead("lead_id")
+
+// Create a lead
+result, err := client.CreateLead(tomba.Params{
+	"email":      "user@example.com",
+	"first_name": "John",
+	"last_name":  "Doe",
+})
+
+// Update a lead
+result, err := client.UpdateLead("lead_id", tomba.Params{
+	"first_name": "Jane",
+})
+
+// Delete a lead
+result, err := client.DeleteLead("lead_id")
 ```
 
-## Examples
+### Leads Lists
 
-Sample codes under [**examples/**](/examples/) folder.
+Organize leads into lists. Supports CRUD operations: `ListLeadsLists()`, `GetLeadsList()`, `CreateLeadsList()`, `UpdateLeadsList()`, `DeleteLeadsList()`.
+
+### Lead Attributes
+
+Manage custom attributes for leads. Supports CRUD operations: `ListAttributes()`, `GetAttribute()`, `CreateAttribute()`, `UpdateAttribute()`, `DeleteAttribute()`.
+
+### Keys
+
+Manage your API keys. Supports `ListKeys()`, `GetKey()`, `CreateKey()`, `ResetKey()`, and `DeleteKey()`.
+
+### Usage
+
+Get your monthly API request usage statistics.
+
+```go
+result, err := client.Usage()
+```
+
+### Logs
+
+Retrieve your last 1,000 API requests from the past 3 months.
+
+```go
+result, err := client.Logs(tomba.Params{"page": 1, "limit": 50})
+```
+
+### Flag
+
+Report incorrect data or hard bounces for credit recovery. Supports `ListFlags()` and `CreateFlag()`.
+
+### Bulk Operations
+
+Create, launch, and download bulk processing jobs.
+
+```go
+import "github.com/tomba-io/go/tomba/models"
+
+// List bulk operations
+result, err := client.GetAllBulks(models.BulkTypeVerifier, &models.BulkGetParams{
+	Page:  1,
+	Limit: 10,
+})
+
+// Create a bulk with file upload
+result, err := client.CreateBulkWithFile(
+	models.BulkTypeVerifier,
+	&models.BulkCreateParams{Name: "My Bulk Verification"},
+	"/path/to/emails.csv",
+)
+
+// Launch a bulk
+result, err := client.LaunchBulk(models.BulkTypeVerifier, 123)
+
+// Check progress
+progress, err := client.GetBulkProgress(models.BulkTypeVerifier, 123)
+
+// Download results
+data, err := client.DownloadBulk(models.BulkTypeVerifier, 123, nil)
+
+// Save results to file
+err := client.SaveBulkResults(models.BulkTypeVerifier, 123, "results.csv", "csv")
+```
+
+Supported `BulkType` values: `BulkTypeSearch`, `BulkTypeSimilar`, `BulkTypeCompany`, `BulkTypeFinder`, `BulkTypeEnrich`, `BulkTypeLinkedIn`, `BulkTypeAuthor`, `BulkTypeVerifier`, `BulkTypePhoneFinder`, `BulkTypePhoneValidator`.
+
+## Testing
+
+```bash
+go test ./tomba/...
+```
 
 ## Documentation
 
-See the [official documentation](https://docs.tomba.io).
+- [API Documentation](https://docs.tomba.io)
+- [Full API Reference](https://docs.tomba.io/api)
 
-### Other Libraries
+## About Tomba
 
-There are official Tomba Email Finder client libraries available for many languages including PHP, Python, Go, Java, Ruby, and many popular frameworks such as Django, Rails and Laravel. There are also many third party libraries and integrations available for our API.
+Founded to solve the problem of unreliable email data, [Tomba.io](https://tomba.io) is the leading B2B email intelligence platform. Our AI-powered engine searches, verifies, and enriches professional contact data with unmatched accuracy.
 
-[https://docs.tomba.io/libraries](https://docs.tomba.io/libraries)
+### Products
 
-### About Tomba
+- **[Email Finder](https://tomba.io/email-finder)** — Find any professional email address
+- **[Email Verifier](https://tomba.io/email-verifier)** — Verify emails in real-time
+- **[Domain Search](https://tomba.io/domain-search)** — Find all emails for a company
+- **[Phone Finder](https://tomba.io/phone-finder)** — Find direct phone numbers
+- **[Bulk Enrichment](https://tomba.io/bulks)** — Enrich contacts at scale
+- **[AI Company Search](https://tomba.io/reveal)** — Find companies with AI-powered search
+- **[CLI](https://tomba.io/cli)** — Command-line interface for Tomba
+- **[MCP Server](https://tomba.io/mcp)** — Connect AI tools (Claude, ChatGPT, Cursor) to Tomba
+- **[REST API](https://tomba.io/api)** — Full programmatic access
 
-Founded in 2021, Tomba prides itself on being the most reliable, accurate, and in-depth source of Email address data available anywhere. We process terabytes of data to produce our Email finder API, company.
+### Browser Extensions & Add-ons
 
-[![image](https://avatars.githubusercontent.com/u/67979591?s=200&v=4)](https://tomba.io/)
+- **[Chrome Extension](https://chromewebstore.google.com/detail/tomba-email-finder-email/icmjegjggphchjckknoooajmklibccjb)** — Find emails while browsing
+- **[Google Sheets Add-on](https://tomba.io/sheets)** — Enrich leads in spreadsheets
+- **[Microsoft Excel Add-in](https://tomba.io/excel)** — Email finder in Excel
+- **[Airtable Integration](https://tomba.io/airtable)** — Connect with Airtable
 
-## Contribution
+### Integrations
 
-1. Fork it (<https://github.com/tomba-io/go/fork>)
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+50+ CRM and sales tool integrations:
+[Salesforce](https://tomba.io/integrations) · [HubSpot](https://tomba.io/integrations) · [Zapier](https://tomba.io/integrations) · [Pipedrive](https://tomba.io/integrations) · [and more...](https://tomba.io/integrations)
+
+### Other Tomba SDKs
+
+| Language | Package                                                     |
+| -------- | ----------------------------------------------------------- |
+| Node.js  | [tomba](https://www.npmjs.com/package/tomba)                |
+| Python   | [tomba-io](https://pypi.org/project/tomba-io/)              |
+| PHP      | [tomba-io/php](https://packagist.org/packages/tomba-io/php) |
+| Ruby     | [tomba](https://rubygems.org/gems/tomba)                    |
+| Go       | [tomba-io/go](https://pkg.go.dev/github.com/tomba-io/go)    |
+| Rust     | [tomba](https://crates.io/crates/tomba)                     |
+| Dart     | [tomba](https://pub.dev/packages/tomba)                     |
+| Deno     | [@tomba/sdk](https://jsr.io/@tomba/sdk)                     |
+| Elixir   | [tomba](https://hex.pm/packages/tomba)                      |
+| C#       | [Tomba](https://www.nuget.org/packages/Tomba)               |
+| Perl     | [Tomba::Client](https://metacpan.org/pod/Tomba::Client)     |
+| Lua      | [tomba](https://luarocks.org/modules/tomba/tomba)           |
+| R        | [tomba](https://github.com/tomba-io/r)                      |
+
+### Resources
+
+- [Blog](https://tomba.io/blog)
+- [Help Center](https://help.tomba.io)
+- [API Documentation](https://docs.tomba.io)
+- [Pricing](https://tomba.io/pricing)
+- [Status Page](https://status.tomba.io)
+
+---
+
+**[Try Tomba Free](https://app.tomba.io/auth/register)** — Find your first email in seconds. No credit card required.
 
 ## License
 
-Please see the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0.html) file for more information.
+Apache-2.0

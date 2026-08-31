@@ -17,14 +17,14 @@ type Logs struct {
 }
 
 type LogsData struct {
-	Type       string `json:"type"`
-	URI        string `json:"uri"`
-	Cost       bool   `json:"cost"`
-	IPAddress  string `json:"ip_address"`
-	CreatedAt  string `json:"created_at"`
-	ID         int64  `json:"id"`
-	UserAgent  string `json:"user_agent"`
-	Source     string `json:"source"`
-	HTTPMethod string `json:"http_method"`
-	Country    string `json:"country"`
+	Type       string      `json:"type"`
+	URI        string      `json:"uri"`
+	Cost       json.Number `json:"cost"`
+	IPAddress  string      `json:"ip_address"`
+	CreatedAt  string      `json:"created_at"`
+	ID         int64       `json:"id"`
+	UserAgent  string      `json:"user_agent"`
+	Source     string      `json:"source"`
+	HTTPMethod string      `json:"http_method"`
+	Country    string      `json:"country"`
 }

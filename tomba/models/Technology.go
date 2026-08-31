@@ -18,15 +18,15 @@ type Technology struct {
 }
 
 type TechnologyData struct {
-	Slug       string               `json:"slug"`
-	Name       string               `json:"name"`
-	Icon       string               `json:"icon"`
-	Website    string               `json:"website"`
-	Categories TechnologyCategories `json:"categories"`
+	Slug       string                 `json:"slug"`
+	Name       string                 `json:"name"`
+	Icon       string                 `json:"icon"`
+	Website    string                 `json:"website"`
+	Categories []TechnologyCategories `json:"categories"`
 }
 
 type TechnologyCategories struct {
-	ID   int64  `json:"id"`
-	Slug string `json:"slug"`
-	Name string `json:"name"`
+	ID   json.Number `json:"id"`
+	Slug string      `json:"slug"`
+	Name string      `json:"name"`
 }

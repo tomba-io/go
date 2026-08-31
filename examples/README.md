@@ -201,7 +201,7 @@ go run linkedin_finder.go
 Find the email address of the author of a blog post.
 
 ```go
-client.AuthorFinder("https://clearbit.com/blog/company-name-to-domain-api")
+client.AuthorFinder(tomba.Params{"url": "https://clearbit.com/blog/company-name-to-domain-api"})
 ```
 
 ```bash

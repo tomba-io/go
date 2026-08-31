@@ -1,0 +1,43 @@
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.26"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - misspell
+    - bodyclose
+    - unconvert
+    - nilerr
+  disable:
+    - depguard
+    - revive
+  settings:
+    errcheck:
+      check-type-assertions: false
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+  exclusions:
+    rules:
+      - path: example/
+        linters:
+          - gocritic
+          - govet
+          - staticcheck
+    paths:
+      - examples
+      - third_party
+      - builtin
