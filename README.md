@@ -372,7 +372,30 @@ result, err := client.Logs(tomba.Params{"page": 1, "limit": 50})
 
 ### Flag
 
-Report incorrect data or hard bounces for credit recovery. Supports `ListFlags()` and `CreateFlag()`.
+Report incorrect data for credit recovery.
+
+```go
+// List flags
+result, err := client.ListFlags(tomba.Params{"page": "1", "limit": "10"})
+
+// Create a flag
+result, err := client.CreateFlag(tomba.Params{
+    "flag_type": "email",           // email, organization, phone, author_url, website
+    "value":     "bounce@example.com",
+    "reason":    "hard_bounce",     // depends on flag_type (see below)
+    "comment":   "Bounced 3 times", // optional, max 1000 chars
+})
+```
+
+**Valid reasons by flag type:**
+
+| Flag Type      | Valid Reasons                                                       |
+| -------------- | ------------------------------------------------------------------- |
+| `email`        | `hard_bounce`, `invalid_email`, `wrong_person`, `outdated`, `other` |
+| `organization` | `wrong_company`, `outdated`, `other`                                |
+| `phone`        | `wrong_phone`, `outdated`, `other`                                  |
+| `author_url`   | `broken_url`, `wrong_person`, `outdated`, `other`                   |
+| `website`      | `broken_url`, `wrong_company`, `outdated`, `other`                  |
 
 ### Bulk Operations
 
