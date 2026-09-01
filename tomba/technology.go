@@ -5,7 +5,7 @@ import (
 )
 
 // TechnologyCheck retrieves the technologies used by a specific domain.
-// See https://docs.tomba.io/api/~endpoints#technology
+// See https://docs.tomba.io/api/domain#technology
 func (conf *Tomba) TechnologyCheck(domain string) (models.Technology, error) {
 	technology := models.Technology{}
 	str, err := conf.TombaCall("/technology", Params{"domain": domain}, nil, nil)

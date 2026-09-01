@@ -5,7 +5,7 @@ import (
 )
 
 // SimilarDomains retrieves a list of similar domains based on a given domain name.
-// See https://docs.tomba.io/api/~endpoints#similar
+// See https://docs.tomba.io/api/domain#similar
 func (conf *Tomba) SimilarDomains(domain string) (models.Similar, error) {
 	similarDomains := models.Similar{}
 	str, err := conf.TombaCall(SIMILAR_PATH, Params{"domain": domain}, nil, nil)
