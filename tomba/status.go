@@ -20,16 +20,16 @@ func (conf *Tomba) Status(domain string) (models.Status, error) {
 }
 
 // AutoComplete returns suggestions for domain names based on a partial query.
-// See https://docs.tomba.io/api/domain#domain-status#autocomplete
-func (conf *Tomba) AutoComplete(query string) (models.Status, error) {
-	status := models.Status{}
+// See https://docs.tomba.io/api/domain-suggestions#get-domain-suggestions
+func (conf *Tomba) AutoComplete(query string) (models.DomainSuggestions, error) {
+	result := models.DomainSuggestions{}
 	str, err := conf.TombaCall(AUTOCOMPLETE_PATH, Params{"query": query}, nil, nil)
 	if err != nil {
-		return status, err
+		return result, err
 	}
-	data, err := models.UnmarshalStatus(str)
+	data, err := models.UnmarshalDomainSuggestions(str)
 	if err != nil {
-		return status, err
+		return result, err
 	}
 	return data, nil
 }
