@@ -26,20 +26,21 @@ type CompanyData struct {
 
 // CompanyOrganization represents the organization details.
 type CompanyOrganization struct {
-	Name          string  `json:"name,omitempty"`
-	Description   *string `json:"description,omitempty"`
-	WebsiteURL    *string `json:"website_url,omitempty"`
-	Industries    *string `json:"industries,omitempty"`
-	Country       *string `json:"country,omitempty"`
-	City          *string `json:"city,omitempty"`
-	State         *string `json:"state,omitempty"`
-	StreetAddress *string `json:"street_address,omitempty"`
-	PostalCode    *string `json:"postal_code,omitempty"`
-	EmployeeCount int64   `json:"employee_count,omitempty"`
-	Founded       *string `json:"founded,omitempty"`
-	CompanySize   *string `json:"company_size,omitempty"`
-	Revenue       *string `json:"revenue,omitempty"`
-	LinkedinURL   *string `json:"linkedin_url,omitempty"`
-	TwitterURL    *string `json:"twitter_url,omitempty"`
-	FacebookURL   *string `json:"facebook_url,omitempty"`
+	Organization  string            `json:"organization,omitempty"`
+	WebsiteURL    *string           `json:"website_url,omitempty"`
+	Description   *string           `json:"description,omitempty"`
+	Industries    *string           `json:"industries,omitempty"`
+	EmployeeCount int64             `json:"employee_count,omitempty"`
+	Founded       *string           `json:"founded,omitempty"`
+	CompanySize   *string           `json:"company_size,omitempty"`
+	Revenue       *string           `json:"revenue,omitempty"`
+	Location      SearchLocation    `json:"location"`
+	SocialLinks   SearchSocialLinks `json:"social_links"`
+	Whois         SearchWhois       `json:"whois"`
+	PhoneNumber   bool              `json:"phone_number,omitempty"`
+	PhoneData     []PhoneData       `json:"phone_data,omitempty"`
+	Disposable    bool              `json:"disposable,omitempty"`
+	Webmail       bool              `json:"webmail,omitempty"`
+	AcceptAll     bool              `json:"accept_all,omitempty"`
+	Pattern       *string           `json:"pattern,omitempty"`
 }

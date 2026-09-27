@@ -40,6 +40,7 @@ type SearchEmail struct {
 	Pattern      *string            `json:"pattern"`
 	Score        int64              `json:"score"`
 	Verification SearchVerification `json:"verification"`
+	PhoneData    []PhoneData        `json:"phone_data,omitempty"`
 	LastUpdated  string             `json:"last_updated"`
 	Sources      []SourceElement    `json:"sources"`
 }
