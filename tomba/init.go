@@ -48,6 +48,25 @@ type Tomba struct {
 	ApiKey        string
 	ApiSecret     string
 	LastRateLimit RateLimit
+	// BaseURL overrides DEFAULT_BASE_URL (e.g. a staging API); see WithBaseURL.
+	BaseURL string
+}
+
+// WithBaseURL points the client at another API base URL
+// (default "https://api.tomba.io/v1").
+func (conf *Tomba) WithBaseURL(baseURL string) *Tomba {
+	for len(baseURL) > 0 && baseURL[len(baseURL)-1] == '/' {
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+	conf.BaseURL = baseURL
+	return conf
+}
+
+func (conf *Tomba) baseURL() string {
+	if conf.BaseURL != "" {
+		return conf.BaseURL
+	}
+	return DEFAULT_BASE_URL
 }
 
 // New creates a new Tomba client with the given API key and secret.
