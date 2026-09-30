@@ -50,7 +50,7 @@ func (conf *Tomba) DeleteKey(id string) (json.RawMessage, error) {
 // See https://docs.tomba.io/api/keys#reset-an-api-key
 func (conf *Tomba) ResetKey(id string) (json.RawMessage, error) {
 	method := "PUT"
-	str, err := conf.TombaCall(KEYS_PATH+"/"+id+"/reset", nil, &method, nil)
+	str, err := conf.TombaCall(KEYS_PATH+"/"+id, nil, &method, nil)
 	if err != nil {
 		return nil, err
 	}

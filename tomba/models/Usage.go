@@ -13,22 +13,34 @@ func (r *Usage) Marshal() ([]byte, error) {
 }
 
 type Usage struct {
-	Data  []UsageTotal `json:"data"`
-	Total UsageTotal   `json:"total"`
+	Data  []UsageData `json:"data"`
+	Total UsageTotal  `json:"total"`
+}
+
+type UsageData struct {
+	ID              int64  `json:"id"`
+	UserID          int64  `json:"user_id"`
+	Search          int64  `json:"search"`
+	Verifier        int64  `json:"verifier"`
+	Export          int64  `json:"export"`
+	Sources         int64  `json:"sources"`
+	EmailCount      int64  `json:"email_count"`
+	SourceWebsite   int64  `json:"source_website"`
+	SourceBulk      int64  `json:"source_bulk"`
+	SourceExtension int64  `json:"source_extension"`
+	SourceAPI       int64  `json:"source_api"`
+	SourceSheets    int64  `json:"source_sheets"`
+	CreatedAt       string `json:"created_at"`
 }
 
 type UsageTotal struct {
-	Usage        int64   `json:"usage"`
-	CreatedAt    *string `json:"created_at,omitempty"`
-	Domain       int64   `json:"domain"`
-	Finder       int64   `json:"finder"`
-	Verifier     int64   `json:"verifier"`
-	Technologies int64   `json:"technologies"`
-	Website      int64   `json:"website"`
-	Bulk         int64   `json:"bulk"`
-	Extension    int64   `json:"extension"`
-	API          int64   `json:"api"`
-	Mobile       int64   `json:"mobile"`
-	Desktop      int64   `json:"desktop"`
-	Sheets       int64   `json:"sheets"`
+	Search          int64 `json:"search"`
+	Verifier        int64 `json:"verifier"`
+	Export          int64 `json:"export"`
+	Sources         int64 `json:"sources"`
+	SourceWebsite   int64 `json:"source_website"`
+	SourceExtension int64 `json:"source_extension"`
+	SourceBulk      int64 `json:"source_bulk"`
+	SourceAPI       int64 `json:"source_api"`
+	SourceSheets    int64 `json:"source_sheets"`
 }
