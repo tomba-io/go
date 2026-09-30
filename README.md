@@ -399,38 +399,62 @@ result, err := client.CreateFlag(tomba.Params{
 
 ### Bulk Operations
 
-Create, launch, and download bulk processing jobs.
+Run a service over a list or a CSV file. See the [bulk guide](https://docs.tomba.io/bulks) for each type's fields and options.
 
 ```go
 import "github.com/tomba-io/go/tomba/models"
 
-// List bulk operations
-result, err := client.GetAllBulks(models.BulkTypeVerifier, &models.BulkGetParams{
-	Page:  1,
-	Limit: 10,
+// Create and launch a job. Field indexes are zero-based; leave them nil to
+// detect the columns from the header row.
+yes := true
+res, err := client.CreateBulkJob(models.BulkTypeFinder, &models.BulkJobRequest{
+	Name: "Q3 prospects",
+	Data: [][]string{
+		{"first_name", "last_name", "domain"},
+		{"Jane", "Doe", "stripe.com"},
+	},
+	VerifyEmails:      &yes,
+	SkipRowsWithEmail: &yes,
+	WebhookURL:        "https://example.com/hooks/tomba",
+	Launch:            true,
+})
+// res.Data.Message says why a requested launch was refused (quota, running jobs).
+id := *res.Data.ID
+
+// A CSV upload instead of Data
+res, err = client.CreateBulkJob(models.BulkTypeVerifier, &models.BulkJobRequest{
+	Name:     "Newsletter",
+	FilePath: "/path/to/emails.csv",
+	Launch:   true,
 })
 
-// Create a bulk with file upload
-result, err := client.CreateBulkWithFile(
-	models.BulkTypeVerifier,
-	&models.BulkCreateParams{Name: "My Bulk Verification"},
-	"/path/to/emails.csv",
-)
+// What it costs, then follow it
+estimate, err := client.GetBulkEstimate(models.BulkTypeFinder, id)
+progress, err := client.GetBulkJobProgress(models.BulkTypeFinder, id) // status, progress, ETA, live metrics
+job, err := client.GetBulkJob(models.BulkTypeFinder, id)              // job.Config (options), job.Metrics (results, credits)
 
-// Launch a bulk
-result, err := client.LaunchBulk(models.BulkTypeVerifier, 123)
+// Download a result file: "full", "valid" or "not_found" (the first download is billed)
+f, _ := os.Create("results.csv")
+defer f.Close()
+_, err = client.DownloadBulkTo(models.BulkTypeFinder, id, "full", f)
 
-// Check progress
-progress, err := client.GetBulkProgress(models.BulkTypeVerifier, 123)
+// List, manage
+list, err := client.ListBulkJobs(models.BulkTypeFinder, 1, 10, false, models.BulkStatusCompleted, "")
+_, err = client.LaunchBulk(models.BulkTypeFinder, id) // a job created without Launch
+_, err = client.CancelBulk(models.BulkTypeFinder, id)
+_, err = client.RetryBulk(models.BulkTypeFinder, id)  // a failed or cancelled job
+_, err = client.ArchiveBulk(models.BulkTypeFinder, id)
+_, err = client.RestoreBulk(models.BulkTypeFinder, id)
 
-// Download results
-data, err := client.DownloadBulk(models.BulkTypeVerifier, 123, nil)
-
-// Save results to file
-err := client.SaveBulkResults(models.BulkTypeVerifier, 123, "results.csv", "csv")
+// Every type with its fields, options and limits; account activity; webhook signing key
+types, err := client.GetBulkTypes()
+stats, err := client.GetBulkStats("", "2026-09-01", "2026-09-30")
+secret, err := client.GetBulkWebhookSecret()
 ```
 
-Supported `BulkType` values: `BulkTypeSearch`, `BulkTypeSimilar`, `BulkTypeCompany`, `BulkTypeFinder`, `BulkTypeEnrich`, `BulkTypeLinkedIn`, `BulkTypeAuthor`, `BulkTypeVerifier`, `BulkTypePhoneFinder`, `BulkTypePhoneValidator`.
+Supported `BulkType` values: `BulkTypeSearch`, `BulkTypeSimilar`, `BulkTypeCompany`, `BulkTypeFinder`, `BulkTypeEnrich`, `BulkTypeLinkedIn`, `BulkTypeAuthor`, `BulkTypeVerifier`, `BulkTypePhoneFinder`, `BulkTypePhoneValidator`, `BulkTypeTechnology`, `BulkTypeExport`.
+
+The older methods (`CreateBulk`, `CreateBulkWithFile`, `CreateSearchBulk`, `CreateFinderBulk`, `CreatePhoneValidatorBulk`, `GetAllBulks`, `GetBulk`, `GetBulkProgress`, `DownloadBulk`, `SaveBulkResults`) still work but are deprecated. They send the current parameter names; their `Column*` fields stay one-based.
 
 ## Testing
 

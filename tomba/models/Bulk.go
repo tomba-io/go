@@ -18,6 +18,17 @@ const (
 	BulkTypeVerifier       BulkType = "verifier"
 	BulkTypePhoneFinder    BulkType = "phone-finder"
 	BulkTypePhoneValidator BulkType = "phone-validator"
+	BulkTypeTechnology     BulkType = "technology"
+	BulkTypeExport         BulkType = "export"
+)
+
+// Bulk job statuses.
+const (
+	BulkStatusPending   = "pending"
+	BulkStatusRunning   = "running"
+	BulkStatusCompleted = "completed"
+	BulkStatusFailed    = "failed"
+	BulkStatusCancelled = "cancelled"
 )
 
 // Request Models
@@ -27,10 +38,14 @@ type BulkGetParams struct {
 	Page      int    `json:"page,omitempty"`
 	Limit     int    `json:"limit,omitempty"`
 	Direction string `json:"direction,omitempty"` // "desc" or "asc"
-	Filter    string `json:"filter,omitempty"`    // "archived" or "all"
+	Filter    string `json:"filter,omitempty"`    // "archived" lists the archived jobs
 }
 
-// BulkCreateParams represents parameters for creating bulk operations
+// BulkCreateParams represents parameters for creating bulk operations with
+// the deprecated Create*Bulk methods, which send them under the current names:
+// Sources → include_sources, Notifie → notify, Verify → verify_emails,
+// Valid → boost_score_from_sources, and the one-based Column → the type's
+// zero-based <field>_field_index. Total is not sent.
 type BulkCreateParams struct {
 	Name      string `json:"name" form:"name"`
 	List      string `json:"list,omitempty" form:"list"`
@@ -55,7 +70,7 @@ type BulkSearchParamsType struct {
 }
 type BulkSearchParamsDepartment struct {
 	Name         []string `json:"name" form:"name"`                   // oneof=all engineering sales finance hr it marketing operations management executive legal support communication software security pr warehouse diversity administrative facilities accounting"
-	PriorityType string   `json:"priority_type" form:"priority_type"` // "only" or "exclude"
+	PriorityType string   `json:"priority_type" form:"priority_type"` // "only" or "priority"
 }
 
 func (r *BulkSearchParamsType) BulkSearchParamsTypeMarshal() ([]byte, error) {
@@ -77,7 +92,10 @@ type BulkPhoneValidatorParams struct {
 	ColumnCountry int `json:"column_country,omitempty"`
 }
 
-// BulkExportParams represents parameters specific to export bulk operations
+// BulkExportParams represents parameters specific to export bulk operations.
+//
+// Deprecated: no method sends it; use CreateBulkJob with BulkTypeExport
+// (filter, include_sources, find_phones).
 type BulkExportParams struct {
 	Domain  string `json:"domain"`
 	Type    string `json:"type,omitempty"` // "all", "personal", "generic", etc.
@@ -122,41 +140,43 @@ type BulkExportCreateParams struct {
 
 // Response Models
 
-// BulkItem represents a bulk operation item
+// BulkItem is a bulk job, as returned by list and detail. Config holds its
+// options, Metrics its results and credits.
 type BulkItem struct {
-	BulkID      int64       `json:"bulk_id"`
-	Name        string      `json:"name"`
-	Maximum     *string     `json:"maximum,omitempty"`
-	EmailType   *string     `json:"email_type,omitempty"`
-	Department  *string     `json:"department,omitempty"`
-	Sources     *bool       `json:"sources,omitempty"`
-	FileName    string      `json:"file_name"`
-	Total       *int        `json:"total,omitempty"`
-	TotalList   *int        `json:"total_list,omitempty"`
-	Status      bool        `json:"status"`
-	Chart       interface{} `json:"chart,omitempty"`
-	Table       interface{} `json:"table,omitempty"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UserID      int64       `json:"user_id"`
-	Launched    *bool       `json:"launched,omitempty"`
-	Used        bool        `json:"used"`
-	TimeTrack   *string     `json:"time_track,omitempty"`
-	Progress    int         `json:"progress"`
-	Verify      *bool       `json:"verify,omitempty"`
-	VerifyCost  *int        `json:"verify_cost,omitempty"`
-	TotalEmails *int        `json:"total_emails,omitempty"`
-	Processed   int         `json:"processed"`
-	ExpiredAt   time.Time   `json:"expired_at"`
-	Expired     bool        `json:"expired"`
-	BulkType    string      `json:"bulk_type"`
+	BulkID       int64        `json:"bulk_id"`
+	UserID       int64        `json:"user_id"`
+	BulkType     string       `json:"bulk_type"`
+	Name         string       `json:"name"`
+	Status       string       `json:"status"` // pending, running, completed, failed, cancelled
+	Archived     bool         `json:"archived"`
+	Progress     *int         `json:"progress"`
+	Processed    int          `json:"processed"`
+	Billed       bool         `json:"billed"` // the results were downloaded once (and charged)
+	ErrorMessage *string      `json:"error_message"`
+	RetryCount   int          `json:"retry_count"`
+	CreatedAt    time.Time    `json:"created_at"`
+	StartedAt    *time.Time   `json:"started_at"`
+	CompletedAt  *time.Time   `json:"completed_at"`
+	CancelledAt  *time.Time   `json:"cancelled_at"`
+	Expired      bool         `json:"expired"`
+	ExpiredAt    time.Time    `json:"expired_at"`
+	Config       *BulkConfig  `json:"config"`
+	Metrics      *BulkMetrics `json:"metrics"`
+
+	// Preview is the first result rows (detail only), once Billed.
+	Preview json.RawMessage `json:"preview,omitempty"`
 }
 
-// BulkProgress represents bulk operation progress
+// BulkProgress is the progress of a job. A job that was never launched is
+// "pending".
 type BulkProgress struct {
-	Status         bool `json:"status"`
-	Progress       int  `json:"progress"`
-	Processed      int  `json:"processed"`
-	ProcessedEmail int  `json:"processed_email"`
+	Status        string       `json:"status"`
+	Progress      *int         `json:"progress"`
+	Processed     int          `json:"processed"`
+	ErrorMessage  *string      `json:"error_message"`
+	RowsPerMinute *float64     `json:"rows_per_minute"`
+	ETASeconds    *int         `json:"eta_seconds"`
+	Metrics       *BulkMetrics `json:"metrics,omitempty"`
 }
 
 // BulkListResponse represents the response for bulk list operations
@@ -170,15 +190,17 @@ type BulkListResponse struct {
 	} `json:"meta"`
 }
 
-// BulkDetailResponse represents the response for bulk detail operations
+// BulkDetailResponse is what GetBulk returns: the job as a one-element list.
 type BulkDetailResponse struct {
 	Data []BulkItem `json:"data"`
 }
 
-// BulkCreateResponse represents the response for bulk creation
+// BulkCreateResponse represents the response for bulk creation. Message says
+// why a requested launch was refused.
 type BulkCreateResponse struct {
 	Data struct {
-		ID *int64 `json:"id"`
+		ID      *int64 `json:"id"`
+		Message string `json:"message,omitempty"`
 	} `json:"data"`
 }
 

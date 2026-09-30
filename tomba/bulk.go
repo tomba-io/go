@@ -14,8 +14,92 @@ func getBulkPath(bulkType models.BulkType) string {
 	return fmt.Sprintf(BULK_PATH, string(bulkType))
 }
 
+// The methods below predate CreateBulkJob and friends (bulk_jobs.go). They
+// keep their signatures but send the API's current parameter names: the
+// API ignores the old ones (sources, notifie, verify, valid, maximum,
+// column_*...).
+
+// legacyColumnParam is the field the one-based Column parameter meant for
+// each type; it is sent as a zero-based <field>_field_index.
+func legacyColumnParam(t models.BulkType) string {
+	switch t {
+	case models.BulkTypeSearch, models.BulkTypeSimilar, models.BulkTypeCompany, models.BulkTypePhoneFinder:
+		return "domain_field_index"
+	case models.BulkTypeEnrich, models.BulkTypeVerifier:
+		return "email_field_index"
+	case models.BulkTypeLinkedIn:
+		return "linkedin_url_field_index"
+	case models.BulkTypeAuthor:
+		return "url_field_index"
+	case models.BulkTypePhoneValidator:
+		return "phone_field_index"
+	case models.BulkTypeTechnology:
+		return "technology_field_index"
+	}
+	return "" // finder: its columns are named
+}
+
+// legacyOptions are, per type, the options the old flags map to that the
+// type takes (GET /bulk/types). The old API ignored a flag a type did not
+// use; the current one rejects such an option, so it is not sent.
+var legacyOptions = map[models.BulkType][]string{
+	models.BulkTypeSearch:   {"include_sources", "verify_emails", "boost_score_from_sources"},
+	models.BulkTypeSimilar:  {"include_sources", "verify_emails"},
+	models.BulkTypeCompany:  {"verify_emails"},
+	models.BulkTypeFinder:   {"include_sources", "verify_emails", "boost_score_from_sources"},
+	models.BulkTypeEnrich:   {"include_sources", "verify_emails"},
+	models.BulkTypeLinkedIn: {"include_sources", "verify_emails"},
+	models.BulkTypeAuthor:   {"include_sources", "verify_emails"},
+	models.BulkTypeVerifier: {"include_sources"},
+	models.BulkTypeExport:   {"include_sources"},
+}
+
+// createParams translates BulkCreateParams. Options are only sent when true
+// and taken by the type.
+func createParams(t models.BulkType, p *models.BulkCreateParams) Params {
+	out := make(Params)
+	if p == nil {
+		return out
+	}
+	out["name"] = p.Name
+	if p.List != "" {
+		out["list"] = p.List
+	}
+	if p.Delimiter != "" {
+		out["delimiter"] = p.Delimiter
+	}
+	setTrue(out, "notify", p.Notifie)
+	flags := map[string]bool{
+		"include_sources":          p.Sources,
+		"verify_emails":            p.Verify,
+		"boost_score_from_sources": p.Valid,
+	}
+	for _, option := range legacyOptions[t] {
+		setTrue(out, option, flags[option])
+	}
+	if name := legacyColumnParam(t); name != "" {
+		setColumn(out, name, p.Column)
+	}
+	return out
+}
+
+func setTrue(p Params, key string, v bool) {
+	if v {
+		p[key] = true
+	}
+}
+
+// setColumn sends a one-based column as the zero-based <field>_field_index.
+func setColumn(p Params, key string, oneBased int) {
+	if oneBased > 0 {
+		p[key] = oneBased - 1
+	}
+}
+
 // GetAllBulks retrieves all bulk operations for a specific type.
-// See https://docs.tomba.io/api/bulk
+// Filter "archived" lists the archived jobs.
+//
+// Deprecated: use ListBulkJobs.
 func (conf *Tomba) GetAllBulks(bulkType models.BulkType, params *models.BulkGetParams) (*models.BulkListResponse, error) {
 	path := getBulkPath(bulkType)
 
@@ -30,8 +114,8 @@ func (conf *Tomba) GetAllBulks(bulkType models.BulkType, params *models.BulkGetP
 		if params.Direction != "" {
 			requestParams["direction"] = params.Direction
 		}
-		if params.Filter != "" {
-			requestParams["filter"] = params.Filter
+		if params.Filter == "archived" {
+			requestParams["archived"] = "true"
 		}
 	}
 
@@ -46,8 +130,10 @@ func (conf *Tomba) GetAllBulks(bulkType models.BulkType, params *models.BulkGetP
 	return &response, err
 }
 
-// GetBulk retrieves a specific bulk operation by its type and ID.
-// See https://docs.tomba.io/api/bulk
+// GetBulk retrieves a specific bulk operation by its type and ID, as a
+// one-element Data list.
+//
+// Deprecated: use GetBulkJob.
 func (conf *Tomba) GetBulk(bulkType models.BulkType, id int64) (*models.BulkDetailResponse, error) {
 	path := fmt.Sprintf(BULK_PATH+"/%d", string(bulkType), id)
 
@@ -57,36 +143,22 @@ func (conf *Tomba) GetBulk(bulkType models.BulkType, id int64) (*models.BulkDeta
 		return nil, err
 	}
 
-	var response models.BulkDetailResponse
-	err = json.Unmarshal(resp, &response)
-	return &response, err
+	var one struct {
+		Data models.BulkItem `json:"data"`
+	}
+	if err := json.Unmarshal(resp, &one); err != nil {
+		return nil, err
+	}
+	return &models.BulkDetailResponse{Data: []models.BulkItem{one.Data}}, nil
 }
 
-// CreateBulk creates a new bulk operation of the specified type.
-// See https://docs.tomba.io/api/bulk
+// CreateBulk creates a new bulk operation of the specified type (not
+// launched: call LaunchBulk).
+//
+// Deprecated: use CreateBulkJob.
 func (conf *Tomba) CreateBulk(bulkType models.BulkType, params *models.BulkCreateParams) (*models.BulkCreateResponse, error) {
 	path := getBulkPath(bulkType)
-
-	requestParams := make(Params)
-	if params != nil {
-		requestParams["name"] = params.Name
-		if params.List != "" {
-			requestParams["list"] = params.List
-		}
-		requestParams["sources"] = strconv.FormatBool(params.Sources)
-		requestParams["notifie"] = strconv.FormatBool(params.Notifie)
-		requestParams["verify"] = strconv.FormatBool(params.Verify)
-		if params.Total > 0 {
-			requestParams["total"] = strconv.Itoa(params.Total)
-		}
-		if params.Delimiter != "" {
-			requestParams["delimiter"] = params.Delimiter
-		}
-		requestParams["valid"] = strconv.FormatBool(params.Valid)
-		if params.Column > 0 {
-			requestParams["column"] = strconv.Itoa(params.Column)
-		}
-	}
+	requestParams := createParams(bulkType, params)
 
 	method := "POST"
 	resp, err := conf.TombaCall(path, requestParams, &method, nil)
@@ -99,31 +171,13 @@ func (conf *Tomba) CreateBulk(bulkType models.BulkType, params *models.BulkCreat
 	return &response, err
 }
 
-// CreateBulkWithFile creates a new bulk operation with a file upload.
-// See https://docs.tomba.io/api/bulk
+// CreateBulkWithFile creates a new bulk operation with a file upload (not
+// launched: call LaunchBulk).
+//
+// Deprecated: use CreateBulkJob with FilePath.
 func (conf *Tomba) CreateBulkWithFile(bulkType models.BulkType, params *models.BulkCreateParams, filePath string) (*models.BulkCreateResponse, error) {
 	path := getBulkPath(bulkType)
-
-	requestParams := make(Params)
-	if params != nil {
-		requestParams["name"] = params.Name
-		if params.List != "" {
-			requestParams["list"] = params.List
-		}
-		requestParams["sources"] = strconv.FormatBool(params.Sources)
-		requestParams["notifie"] = strconv.FormatBool(params.Notifie)
-		requestParams["verify"] = strconv.FormatBool(params.Verify)
-		if params.Total > 0 {
-			requestParams["total"] = strconv.Itoa(params.Total)
-		}
-		if params.Delimiter != "" {
-			requestParams["delimiter"] = params.Delimiter
-		}
-		requestParams["valid"] = strconv.FormatBool(params.Valid)
-		if params.Column > 0 {
-			requestParams["column"] = strconv.Itoa(params.Column)
-		}
-	}
+	requestParams := createParams(bulkType, params)
 
 	fileUpload := &models.BulkFileUpload{
 		FilePath:  filePath,
@@ -141,24 +195,30 @@ func (conf *Tomba) CreateBulkWithFile(bulkType models.BulkType, params *models.B
 	return &response, err
 }
 
-// CreateSearchBulk creates a new search bulk operation.
-// See https://docs.tomba.io/api/bulk
+// CreateSearchBulk creates a new search bulk operation (not launched: call
+// LaunchBulk).
+//
+// Deprecated: use CreateBulkJob.
 func (conf *Tomba) CreateSearchBulk(params *models.BulkSearchCreateParams) (*models.BulkCreateResponse, error) {
 	path := getBulkPath(models.BulkTypeSearch)
-	requestParams := make(Params)
+	var requestParams Params
 	if params != nil {
-		// Basic bulk params
-		requestParams["name"] = params.Name
-		if params.List != "" {
-			requestParams["list"] = params.List
+		requestParams = createParams(models.BulkTypeSearch, &params.BulkCreateParams)
+		if n, err := strconv.Atoi(params.Maximum); err == nil && n > 0 {
+			requestParams["max_emails_per_domain"] = n
 		}
-		requestParams["sources"] = (params.Sources)
-		requestParams["verify"] = (params.Verify)
-
-		// Search-specific params
-		requestParams["maximum"] = params.Maximum
-		requestParams["email_type"] = params.EmailType
-		requestParams["department"] = params.Department
+		if params.EmailType.Type != "" {
+			requestParams["email_type"] = params.EmailType.Type
+		}
+		if params.EmailType.PriorityType != "" {
+			requestParams["email_type_mode"] = params.EmailType.PriorityType
+		}
+		if len(params.Department.Name) > 0 {
+			requestParams["departments"] = params.Department.Name
+		}
+		if params.Department.PriorityType != "" {
+			requestParams["departments_mode"] = params.Department.PriorityType
+		}
 	}
 
 	method := "POST"
@@ -172,34 +232,21 @@ func (conf *Tomba) CreateSearchBulk(params *models.BulkSearchCreateParams) (*mod
 	return &response, err
 }
 
-// CreateFinderBulk creates a new finder bulk operation with file upload.
-// See https://docs.tomba.io/api/bulk
+// CreateFinderBulk creates a new finder bulk operation with file upload (not
+// launched: call LaunchBulk). Its Column* fields are one-based.
+//
+// Deprecated: use CreateBulkJob.
 func (conf *Tomba) CreateFinderBulk(params *models.BulkFinderCreateParams, filePath string) (*models.BulkCreateResponse, error) {
 	path := getBulkPath(models.BulkTypeFinder)
 
-	requestParams := make(Params)
+	var requestParams Params
 	if params != nil {
-		// Basic bulk params
-		requestParams["name"] = params.Name
-		if params.Delimiter != "" {
-			requestParams["delimiter"] = params.Delimiter
-		}
-		requestParams["verify"] = strconv.FormatBool(params.Verify)
-
-		// Finder-specific params
-		if params.ColumnFirst > 0 {
-			requestParams["column_first"] = strconv.Itoa(params.ColumnFirst)
-		}
-		if params.ColumnLast > 0 {
-			requestParams["column_last"] = strconv.Itoa(params.ColumnLast)
-		}
-		if params.ColumnName > 0 {
-			requestParams["column_name"] = strconv.Itoa(params.ColumnName)
-		}
-		if params.ColumnDomain > 0 {
-			requestParams["column_domain"] = strconv.Itoa(params.ColumnDomain)
-		}
-		requestParams["skip"] = strconv.FormatBool(params.Skip)
+		requestParams = createParams(models.BulkTypeFinder, &params.BulkCreateParams)
+		setColumn(requestParams, "first_name_field_index", params.ColumnFirst)
+		setColumn(requestParams, "last_name_field_index", params.ColumnLast)
+		setColumn(requestParams, "full_name_field_index", params.ColumnName)
+		setColumn(requestParams, "domain_field_index", params.ColumnDomain)
+		setTrue(requestParams, "skip_rows_with_email", params.Skip)
 	}
 
 	fileUpload := &models.BulkFileUpload{
@@ -218,26 +265,18 @@ func (conf *Tomba) CreateFinderBulk(params *models.BulkFinderCreateParams, fileP
 	return &response, err
 }
 
-// CreatePhoneValidatorBulk creates a new phone validator bulk operation.
-// See https://docs.tomba.io/api/bulk
+// CreatePhoneValidatorBulk creates a new phone validator bulk operation (not
+// launched: call LaunchBulk). Its Column* fields are one-based.
+//
+// Deprecated: use CreateBulkJob.
 func (conf *Tomba) CreatePhoneValidatorBulk(params *models.BulkPhoneValidatorCreateParams, filePath string) (*models.BulkCreateResponse, error) {
 	path := getBulkPath(models.BulkTypePhoneValidator)
 
-	requestParams := make(Params)
+	var requestParams Params
 	if params != nil {
-		// Basic bulk params
-		requestParams["name"] = params.Name
-		if params.Delimiter != "" {
-			requestParams["delimiter"] = params.Delimiter
-		}
-
-		// Phone validator specific params
-		if params.ColumnPhone > 0 {
-			requestParams["column_phone"] = strconv.Itoa(params.ColumnPhone)
-		}
-		if params.ColumnCountry > 0 {
-			requestParams["column_country"] = strconv.Itoa(params.ColumnCountry)
-		}
+		requestParams = createParams(models.BulkTypePhoneValidator, &params.BulkCreateParams)
+		setColumn(requestParams, "phone_field_index", params.ColumnPhone)
+		setColumn(requestParams, "country_field_index", params.ColumnCountry)
 	}
 
 	fileUpload := &models.BulkFileUpload{
@@ -326,7 +365,8 @@ func (conf *Tomba) RenameBulk(bulkType models.BulkType, id int64, params *models
 }
 
 // GetBulkProgress returns the progress of a bulk operation.
-// See https://docs.tomba.io/api/bulk
+//
+// Deprecated: use GetBulkJobProgress.
 func (conf *Tomba) GetBulkProgress(bulkType models.BulkType, id int64) (*models.BulkProgress, error) {
 	path := fmt.Sprintf(BULK_PATH+"/%d/progress", string(bulkType), id)
 
@@ -341,14 +381,16 @@ func (conf *Tomba) GetBulkProgress(bulkType models.BulkType, id int64) (*models.
 	return &response, err
 }
 
-// DownloadBulk downloads the results of a bulk operation.
-// See https://docs.tomba.io/api/bulk
+// DownloadBulk downloads the results of a bulk operation. params.Type is the
+// file: "full" (default), "valid" or "not_found".
+//
+// Deprecated: use DownloadBulkTo.
 func (conf *Tomba) DownloadBulk(bulkType models.BulkType, id int64, params *models.BulkDownloadParams) ([]byte, error) {
 	path := fmt.Sprintf(BULK_PATH+"/%d/download", string(bulkType), id)
 
 	requestParams := make(Params)
 	if params != nil && params.Type != "" {
-		requestParams["type"] = params.Type
+		requestParams["file"] = params.Type
 	}
 
 	method := "GET"

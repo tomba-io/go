@@ -1,5 +1,8 @@
 package tomba
 
+// Version is the SDK version (sent in the User-Agent).
+const Version = "1.2.0"
+
 const (
 	DEFAULT_BASE_URL = "https://api.tomba.io/v1"
 	// Account path
